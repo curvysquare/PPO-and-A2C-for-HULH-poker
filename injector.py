@@ -128,6 +128,14 @@ class card_injector():
                 obs[public_cards_idx] = 1
                 obs[hand_idx] = 2
                 
+            if self.env.obs_type == '72':
+                hand_idx = [self.card2index[card.get_index()] for card in tupe[0]]
+                public_cards_idx = [self.card2index[card.get_index()] for card in tupe[1]]
+                obs = np.zeros(72)
+                obs[public_cards_idx] = 1
+                obs[hand_idx] = 1
+                    
+                
             if key == 'HC':  
                 raise_nums = [1,1,1]
                 for i, num in enumerate(raise_nums):

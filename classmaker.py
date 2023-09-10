@@ -4,9 +4,10 @@ import texas_holdem_mod as texas_holdem
 from stable_baselines3.common.monitor import Monitor
 from tabulate import tabulate
 from scipy.interpolate import make_interp_spline
+import os 
  
 class graph_metrics():
-    def __init__(self, n_models, storage, storageB,figsize, t_steps, overlay, e_steps): 
+    def __init__(self, n_models, storage, storageB,figsize, t_steps, overlay, e_steps, title, device ): 
         self.num_graphs = n_models
         self.storage = storage
         self.storageB = storageB
@@ -15,6 +16,17 @@ class graph_metrics():
         self.t_steps = t_steps
         self.overlay = overlay
         self.e_steps = e_steps
+        self.title = title 
+        self.device = device 
+        
+        if self.device == 'mac':
+            self.direct = '/Users/rhyscooper/Desktop/MSc Project/Pages/plots3/' + self.title
+            if not os.path.exists(self.direct):
+                os.makedirs(self.direct)
+        elif self.device == 'pc':
+            self.direct = 'na'
+        
+        
  
     def create_x_y(self):
         same_keys = self.check_dicts_have_same_keys(self.storage)
@@ -196,6 +208,7 @@ class graph_metrics():
         
          
     def plot_rewards(self, train, eval):
+        file_path = os.path.join(self.direct, 'sing_rewards.png')
         if not self.overlay:
             fig4, axs4 = plt.subplots(self.num_graphs, 2, sharey= 'col', figsize = self.figsize)
             for i, key in enumerate(self.storage_ids):
@@ -214,6 +227,8 @@ class graph_metrics():
                     axs4[i, 1].set_title(str(key) + ' evaluation Reward')
                     axs4[i, 1].legend(fontsize='small')
             plt.tight_layout()
+            fig4.suptitle('sing_rewards.png')
+            fig4.savefig(file_path)
             plt.show()  
         else:
             fig4, axs4 = plt.subplots(1, 1, sharey= 'col', figsize = self.figsize)
@@ -236,6 +251,8 @@ class graph_metrics():
     
             axs4.legend(fontsize='small')
             plt.tight_layout()
+            fig4.suptitle('sing_rewards.png')
+            fig4.savefig(self.direct + self.title)
             plt.show()  
             
                         

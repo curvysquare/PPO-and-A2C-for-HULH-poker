@@ -202,6 +202,8 @@ class self_play():
         # self.n_steps = 100
         self.na_key = na_key
         self.default_params = default_params
+        
+        self.title = model + obs_type + str(n_gens)+ 'default' + str(default_params)
         if self.model == 'PPO':
             if default_params:
                  self.base_model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [64], 'vf': [64]})
@@ -213,7 +215,7 @@ class self_play():
             self.base_model = A2C('MultiInputPolicy', env, optimizer_class= th.optim.RMSprop, activation_fn = nn.ReLU, learning_rate =  0.04568216636850521, n_steps =10000, ent_coef =0.0025, vf_coef = 0.25, use_rms_prop = False,  net_arch = {'pi': [256], 'vf': [256]}, gae_lambda=0.85, normalize_advantage=False, max_grad_norm=0.5)
             self.env.AGENT.policy = 'A2C'
         
-        self.gen_lib = self.create_files(self.n_gens + 1) 
+        self.gen_lib = self.create_files(self.n_gens + 1, device='mac') 
         
         self.gen_keys = []
         for gen in range(n_gens+1):
@@ -228,8 +230,11 @@ class self_play():
         
 
   
-    def create_files(self, n_files):
-        directory = r'S:/MSC_proj/models'
+    def create_files(self, n_files, device):
+        if device == 'pc':
+            directory = r'S:/MSC_proj/models'
+        elif device == 'mac':    
+            directory = '/Users/rhyscooper/Desktop/MSc Project/Pages/models'
         dict_lib = {}
         suffix = '.zip'
         # Create ten folders
@@ -389,7 +394,7 @@ class self_play():
         print(self.metric_dicts.gen_eval_final_mean_reward)
         
         if graphs:
-            gm = graph_metrics(n_models = self.n_gens+1, storage = self.metric_dicts, storageB= self.metric_dicts_rand, figsize= (10, 8), t_steps = self.learning_steps, overlay= False, e_steps=self.n_eval_episodes, key = self.tag )
+            gm = graph_metrics(n_models = self.n_gens+1, storage = self.metric_dicts, storageB= self.metric_dicts_rand, figsize= (10, 8), t_steps = self.learning_steps, overlay= False, e_steps=self.n_eval_episodes, title = self.title, device='mac' )
             gm.print_all_graphs(True, True, True, True, False)
 
 class hyperparam_search(BatchMultiplier):
@@ -616,7 +621,7 @@ class hyperparam_search(BatchMultiplier):
 # callback1 = StopTrainingOnNoModelImprovement(max_no_improvement_evals=45, min_evals=35)
 
 def sp_group():
-    sp = self_play(2, 3072, 3072, '72+', 211, 'PPO', na_key = None, default_params=True)
+    sp = self_play(1, 2048, 2048, '72', 211, 'PPO', na_key = None, default_params=True)
     # sp = self_play(7,100,100, '72+', 124, 'PPO', na_key = None)
     sp.run(False)
     sp.get_results(graphs = True)
