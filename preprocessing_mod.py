@@ -108,6 +108,8 @@ def preprocess_obs(
     if isinstance(observation_space, spaces.Box):
         if normalize_images and is_image_space(observation_space):
             return obs.float() / 255.0
+        if type(obs) == np.ndarray:
+            obs = th.tensor(obs)
         return obs.float()
 
     elif isinstance(observation_space, spaces.Discrete):

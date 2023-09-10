@@ -5,7 +5,10 @@ import torch as th
 from gymnasium import spaces
 from torch import nn
 
-from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
+try:
+    from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
+except ModuleNotFoundError:
+    from preprocessing_mod import get_flattened_obs_dim, is_image_space
 from type_aliases_mod import TensorDict
 from utils_mod import get_device
 

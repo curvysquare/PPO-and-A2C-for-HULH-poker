@@ -6,7 +6,10 @@ import numpy as np
 import torch as th
 from gymnasium import spaces
 
-from stable_baselines3.common.preprocessing import get_action_dim, get_obs_shape
+try:
+    from stable_baselines3.common.preprocessing import get_action_dim, get_obs_shape
+except ModuleNotFoundError:
+    from preprocessing_mod import get_action_dim, get_obs_shape
 from type_aliases_mod import (
     DictReplayBufferSamples,
     DictRolloutBufferSamples,

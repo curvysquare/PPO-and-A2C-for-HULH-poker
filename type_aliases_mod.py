@@ -14,10 +14,12 @@ else:
     from typing_extensions import Protocol
 
 from stable_baselines3.common import vec_env
-try:
-    from stable_baselines3.common import callbacks_mod as callbacks
-except ImportError:
-    import stable_baselines3.common.callbacks as callbacks
+# try: 
+#     import callbacks_mod as callbacks
+# except ImportError:    
+from stable_baselines3.common import callbacks
+
+    
 
 
 # import callbacks_mod as callbacks

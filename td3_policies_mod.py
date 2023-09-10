@@ -5,7 +5,10 @@ from gymnasium import spaces
 from torch import nn
 
 from policies_mod import BasePolicy, ContinuousCritic
-from stable_baselines3.common.preprocessing import get_action_dim
+try:
+    from stable_baselines3.common.preprocessing import get_action_dim
+except ModuleNotFoundError:
+    from preprocessing_mod import get_action_dim    
 from torch_layers_mod import (
     BaseFeaturesExtractor,
     CombinedExtractor,

@@ -6,8 +6,11 @@ from rlcard.utils.utils import print_card as prnt_cd
 from rlcard.games.base import Card
 import rlcard 
 from rlcard.utils.utils import print_card as prnt_cd
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.evaluation import evaluate_policy
+try: from stable_baselines3.common.env_checker import check_env
+except ModuleNotFoundError: from env_checker_mod import check_env
+
+try: from stable_baselines3.common.evaluation import evaluate_policy
+except ModuleNotFoundError: from evaluation_mod import evaluate_policy
 from callbacks_mod import EvalCallback
 from callbacks_mod import StopTrainingOnNoModelImprovement
 from stable_baselines3.common.monitor import Monitor

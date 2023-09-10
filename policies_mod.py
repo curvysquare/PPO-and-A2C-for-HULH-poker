@@ -21,7 +21,7 @@ from stable_baselines3.common.distributions import (
     StateDependentNoiseDistribution,
     make_proba_distribution,
 )
-from preprocessing import get_action_dim, is_image_space, maybe_transpose, preprocess_obs
+from preprocessing_mod import get_action_dim, is_image_space, maybe_transpose, preprocess_obs
 # from stable_baselines3.common.preprocessing import get_action_dim, is_image_space, maybe_transpose, preprocess_obs
 from torch_layers_mod import (
     BaseFeaturesExtractor,
