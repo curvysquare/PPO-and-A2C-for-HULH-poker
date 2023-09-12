@@ -6,7 +6,7 @@ import texas_holdem_mod as texas_holdem
 import rlcard 
 from rlcard.utils.utils import print_card as prnt_cd
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.evaluation import evaluate_policy
+from evaluation_mod import evaluate_policy
 from callbacks_mod import EvalCallback
 from callbacks_mod import StopTrainingOnNoModelImprovement
 from stable_baselines3.common.monitor import Monitor
@@ -25,7 +25,7 @@ from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
 from classmaker import obs_type_envs
 from classmaker import metric_dicts
-
+from ppo import PPO
 class human_play_callback(BaseCallback):
     def __init__(self, verbose=0):
         super(human_play_callback, self).__init__(verbose)
@@ -55,28 +55,27 @@ class human_play_callback(BaseCallback):
             self.final_mean_reward = self.moving_mean_reward[-1]
 
 class human_play():
-    def __init__(self,obs_type, n_eval):    
+    def __init__(self,obs_type, n_eval, root):    
         self.obs_type = obs_type
         self.n_eval_episodes = n_eval
-        '/Users/rhyscooper/Desktop/MSc Project/Pages/models'
+        self.root = root
+        self.set_up_env()
+
     def set_up_env(self):
-        root = '/Users/rhyscooper/Desktop/MSc Project/Pages/models/1002_6.zip'
+        # root = '/Users/rhyscooper/Desktop/MSc Project/Pages/models/1002_6.zip'
         Eval_env = texas_holdem.env(self.obs_type, render_mode = "rgb_array")
         Eval_env.AGENT.policy = 'PPO'
         Eval_env.AGENT.model = PPO('MultiInputPolicy', Eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25, clip_range=0.1, max_grad_norm=0.6, gae_lambda = 0.85, normalize_advantage=False)
-        Eval_env.AGENT.model.set_parameters(load_path_or_dict= root)
+        Eval_env.AGENT.model.set_parameters(load_path_or_dict= self.root)
         Eval_env.OPPONENT.policy = 'human'
         
         self.Eval_env = Monitor(Eval_env)
         self.env = Eval_env
         
     def play(self):
-        mean_reward,episode_rewards, episode_lengths= evaluate_policy(self.env.AGENT.model, self.Eval_env, n_eval_episodes = self.n_eval_episodes, verbose = True, return_episode_rewards= False) 
+        mean_reward,episode_rewards = evaluate_policy(self.env.AGENT.model, self.Eval_env, n_eval_episodes = self.n_eval_episodes, verbose = True, return_episode_rewards= False)
+        self.mean_reward = mean_reward  
 
         
 
         
-        
-hp = human_play('72+', 50)    
-hp.set_up_env()    
-hp.play()

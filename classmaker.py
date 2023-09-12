@@ -24,7 +24,9 @@ class graph_metrics():
             if not os.path.exists(self.direct):
                 os.makedirs(self.direct)
         elif self.device == 'pc':
-            self.direct = 'na'
+            self.direct = os.path.join('S:\\MSC_proj\\plots', self.title )
+            if not os.path.exists(self.direct):
+                os.makedirs(self.direct)
         
         
  
@@ -83,16 +85,18 @@ class graph_metrics():
             del self.storage.sims[1]
         if 2 in self.storage.sims:
             del self.storage.sims[2]    
-            
-        for key in self.storage.sims.keys():
-            self.HC_sims[1].append(round(self.storage.sims[key]['HC'], 2)*100)
-            self.STR_sims[1].append(round(self.storage.sims[key]['STR'], 2) *100)
-            self.RF_sims[1].append(round(self.storage.sims[key]['RF'], 2) *100)
-            
-        self.HC_sims[0] = [i for i in range(len(self.HC_sims[1]))]
-        self.STR_sims[0] = [i for i in range(len(self.STR_sims[1]))]
-        self.RF_sims[0] = [i for i in range(len(self.RF_sims[1]))]
-            
+
+        try:    
+            for key in self.storage.sims.keys():
+                self.HC_sims[1].append(round(self.storage.sims[key]['HC'], 2)*100)
+                self.STR_sims[1].append(round(self.storage.sims[key]['STR'], 2) *100)
+                self.RF_sims[1].append(round(self.storage.sims[key]['RF'], 2) *100)
+                
+            self.HC_sims[0] = [i for i in range(len(self.HC_sims[1]))]
+            self.STR_sims[0] = [i for i in range(len(self.STR_sims[1]))]
+            self.RF_sims[0] = [i for i in range(len(self.RF_sims[1]))]
+        except TypeError:
+            pass  
 
                  
         # combine all percentages
@@ -227,7 +231,7 @@ class graph_metrics():
                     axs4[i, 1].set_title(str(key) + ' evaluation Reward')
                     axs4[i, 1].legend(fontsize='small')
             plt.tight_layout()
-            fig4.suptitle('sing_rewards.png')
+            # fig4.suptitle('sing_rewards.png')
             fig4.savefig(file_path)
             plt.show()  
         else:
@@ -251,8 +255,8 @@ class graph_metrics():
     
             axs4.legend(fontsize='small')
             plt.tight_layout()
-            fig4.suptitle('sing_rewards.png')
-            fig4.savefig(self.direct + self.title)
+            # fig4.suptitle('sing_rewards.png')
+            fig4.savefig(file_path)
             plt.show()  
             
                         
@@ -260,6 +264,7 @@ class graph_metrics():
    
              
     def plot_moving_rewards(self, train, eval):
+        file_path = os.path.join(self.direct, 'sing_mov_rewards.png')
         if not self.overlay:
             fig2, axs2 = plt.subplots(self.num_graphs, 2, sharey= 'col',figsize = self.figsize) 
         
@@ -281,6 +286,7 @@ class graph_metrics():
                     axs2[i, 1].set_title('evaluation moving Reward')
                     axs2[i, 1].legend(fontsize='small')
             plt.tight_layout()
+            fig2.savefig(file_path)
             plt.show()
             
         else:
@@ -305,9 +311,11 @@ class graph_metrics():
             #     axs4.plot(self.eval_rand_op_moving_total['PPO'][0], self.eval_rand_op_moving_total['PPO'][1],  color = 'r', label= 'random')
             axs4.legend(fontsize='small')
             plt.tight_layout()
+            fig4.savefig(file_path)
             plt.show()                  
     
-    def plot_moving_mean(self, train, eval):
+    def plot_moving_mean(self, train, eval, trim):
+        file_path = os.path.join(self.direct, 'sing_mov_mean.png')
         if not self.overlay:
             fig1, axs1 = plt.subplots(self.num_graphs, 2, sharey= 'col', figsize = self.figsize)
             for i, key in enumerate(self.storage_ids):
@@ -326,46 +334,77 @@ class graph_metrics():
                     axs1[i, 1].set_title(str(key) + ' moving mean')
                     axs1[i, 1].legend(fontsize='small')   
             plt.tight_layout()
+            fig1.savefig(file_path)
             plt.show()
+
             
         else:
-            fig4, axs4 = plt.subplots(1, 1, sharey= 'col', figsize = self.figsize)
-            for key in (self.storage_ids):
-                if train:
-                    axs4.plot(self.train_moving_mean[key][0], self.train_moving_mean[key][1], color = 'b', label= 'reward')
-                    axs4.axhline(y=np.mean(self.train_moving_mean[key][1]), color='r', linestyle='-', label='mean reward')
-        
-                    # axs4[i, 0].plot(self.train_rand_op_rewards[key][0], self.train_rand_op_rewards[key][1], color = 'g', linestyle = '--',label= 'rand')
-                    axs4.set_title(' training Reward')
+            if not trim:
+                trim = 400
+                fig4, axs4 = plt.subplots(1, 1, sharey= 'col', figsize = self.figsize)
+                for key in (self.storage_ids):
+                    if train:
+                        axs4.plot(self.train_moving_mean[key][0], self.train_moving_mean[key][1], color = 'b', label= 'reward')
+                        axs4.axhline(y=np.mean(self.train_moving_mean[key][1]), color='r', linestyle='-', label='mean reward')
+            
+                        # axs4[i, 0].plot(self.train_rand_op_rewards[key][0], self.train_rand_op_rewards[key][1], color = 'g', linestyle = '--',label= 'rand')
+                        axs4.set_title(' training Reward')
 
-                if eval:
-                    if key == 'PPO': 
-                        colourP = 'b'
-                    else:
-                        colourP = 'g'
-                    if key == 'random':
-                        pass
-                    else:     
-                        axs4.plot(self.eval_moving_mean[key][0], self.eval_moving_mean[key][1], color = colourP , label= str(key) + 'mean reward')
-                        # axs4.axhline(y=np.mean(self.eval_rewards[key][1]), color='r', linestyle='-', label='mean reward')
+                    if eval:
+                        if key == 'PPO': 
+                            colourP = 'b'
+                            colourM = 'lightblue'
+                        else:
+                            colourP = 'g'
+                            colourM = 'lightgreen'
+    
+
+                        axs4.plot(self.eval_moving_mean[key][0], self.eval_moving_mean[key][1], color = colourP , label= str(key) + '_mean reward')
+                        axs4.axhline(y=np.mean(self.eval_rewards[key][1]), color=colourM, linestyle='--', label=str(key) +'_average: ' + str(np.mean(self.eval_rewards[key][1])))
                         axs4.set_title('evaluation mean reward')
-                    
-            axs4.axhline(y=-0.5, color='r', linestyle='--', label='random')
+            if trim:
+                    fig4, axs4 = plt.subplots(1, 1, sharey= 'col', figsize = self.figsize)
+                    for key in (self.storage_ids):
+                        if train:
+                            axs4.plot(self.train_moving_mean[key][0][trim:] , self.train_moving_mean[key][1][trim:] , color = 'b', label= 'reward')
+                            axs4.axhline(y=np.mean(self.train_moving_mean[key][1]), color='r', linestyle='-', label='mean reward')
+                
+                            # axs4[i, 0].plot(self.train_rand_op_rewards[key][0], self.train_rand_op_rewards[key][1], color = 'g', linestyle = '--',label= 'rand')
+                            axs4.set_title(' training Reward')
+
+                        if eval:
+                            if key == 'PPO': 
+                                colourP = 'b'
+                                colourM = 'lightblue'
+                            else:
+                                colourP = 'g'
+                                colourM = 'lightgreen'
+        
+
+                            axs4.plot(self.eval_moving_mean[key][0][trim:] , self.eval_moving_mean[key][1][trim:] , color = colourP , label= str(key) + '_mean reward')
+                            axs4.axhline(y=np.mean(self.eval_rewards[key][1][trim:] ), color=colourM, linestyle='--', label=str(key) +'_average: ' + str(np.mean(self.eval_rewards[key][1][trim:] )))
+                            axs4.set_title('evaluation mean reward')
+
+
             axs4.legend(fontsize='small')
             plt.tight_layout()
+            fig4.savefig(file_path)
             plt.show()                     
                 
     
     def plot_loss(self):
+        file_path = os.path.join(self.direct, 'loss.png')
         fig5, axs5 = plt.subplots(self.num_graphs, 1, sharey='col', figsize = self.figsize)
         for i, key in enumerate(self.storage_ids):
             axs5[i].plot(self.train_losses[key][0], self.train_losses[key][1], label='training loss')
             axs5[i].set_title(str(key) + 'loss')
             
-        plt.tight_layout()  
+        plt.tight_layout()
+        fig5.savefig(file_path)  
         plt.show()
     
     def comb_plot_rewards(self, train, eval):
+        file_path = os.path.join(self.direct, 'sing_comb_rewards.png')
         fig2, axs2 = plt.subplots(2, 1,figsize = self.figsize) 
         if train:
             axs2[0].axhline(y=np.mean(self.comb_train_rewards[1]), color='r', linestyle='-', label='mean')
@@ -383,9 +422,11 @@ class graph_metrics():
             axs2[1].set_title('eval rewards')
             axs2[1].legend(fontsize='small')
         # plt.tight_layout()
+        fig2.savefig(file_path)
         plt.show()
         
     def comb_plot_moving_total(self, train, eval):
+        file_path = os.path.join(self.direct, 'mov_comb_rewards.png')
         fig2, axs2 = plt.subplots(2, 1,figsize = self.figsize) 
         if train:
             axs2[0].plot(self.comb_train_moving_total[0], self.comb_train_moving_total[1],  color = 'b', label= 'moving total')
@@ -405,9 +446,11 @@ class graph_metrics():
             axs2[1].set_title('eval moving Reward')
             axs2[1].legend(fontsize='small')
         plt.tight_layout()
+        fig2.savefig(file_path)
         plt.show()
         
     def comb_plot_moving_mean(self, train, eval):
+        file_path = os.path.join(self.direct, 'comb_mov_mean.png')
         fig2, axs2 = plt.subplots(2, 1,figsize = self.figsize) 
         if train:
             axs2[0].plot(self.comb_train_moving_mean[0], self.comb_train_moving_mean[1],  color = 'b', label= 'moving mean')
@@ -428,16 +471,19 @@ class graph_metrics():
             axs2[1].set_title('eval moving mean')
             axs2[1].legend(fontsize='small')
         plt.tight_layout()
+        fig2.savefig(file_path)
         plt.show()    
 
     def comb_plot_opt_acts(self, sing_opt_acts):
+        file_path = os.path.join(self.direct, 'opt_acts.png')
         if not self.overlay:
             if sing_opt_acts:           
                 fig5, axs5 = plt.subplots(1, 1, sharey='col', figsize = self.figsize)
                 axs5.plot(self.sep_percentages_ag[0], self.sep_percentages_ag[1], label='agent optimal action rate')
                 axs5.set_title('optimal action percentages')
                 axs5.legend(fontsize='small')
-                plt.tight_layout()  
+                plt.tight_layout()
+                fig5.savefig(file_path)  
                 plt.show()  
             else:
                 fig5, axs5 = plt.subplots(1, 1, sharey='col', figsize = self.figsize)
@@ -446,7 +492,8 @@ class graph_metrics():
                 axs5.legend(fontsize='small')
                 # for j in range(1,self.n_SP_gens+1):
                 #     axs5.axvline(x=self.e_steps *j, color='y', linestyle='--', label = 'generation update')
-                plt.tight_layout()  
+                plt.tight_layout()
+                fig5.savefig(file_path)    
                 plt.show()
          
         else:
@@ -455,11 +502,12 @@ class graph_metrics():
             axs5.plot(self.sep_percentages_op[0], self.sep_percentages_op[1], label='opponent optimal action rate')
             axs5.set_title('optimal action percentages')
             axs5.legend(fontsize='small')
-            plt.tight_layout()  
+            plt.tight_layout()
+            fig5.savefig(file_path)    
             plt.show()    
   
             
-    def plot_sims(self):
+    def plot_sims(self):       
         if len(self.HC_sims[0])>1:
             fig5, axs5 = plt.subplots(1, 1, figsize = self.figsize)
             axs5.plot(self.HC_sims[0], self.HC_sims[1], label='High Card')
@@ -498,19 +546,19 @@ class graph_metrics():
         for attr in dict_attributes[1:]:
             current_keys = list(getattr(class_instance, attr).keys())
             if current_keys != reference_keys:
-                print(f"Keys in '{attr}' are different from the reference dictionary.")
+                # print(f"Keys in '{attr}' are different from the reference dictionary.")
                 print(reference_keys, current_keys)
                 return False
         
         # print("All dictionary attributes have the same keys.")
         return True      
     
-    def print_all_graphs(self, train, eval, comb, sim, sing_opt_acts):
+    def print_all_graphs(self, train, eval, comb, sim, sing_opt_acts, trim):
             print("creating xy")
             self.create_x_y()
             self.plot_rewards(train, eval)
             self.plot_moving_rewards(train, eval)
-            self.plot_moving_mean(train, eval)
+            self.plot_moving_mean(train, eval, trim)
             self.plot_loss()
             if comb:
                 self.comb_plot_rewards(train, eval)

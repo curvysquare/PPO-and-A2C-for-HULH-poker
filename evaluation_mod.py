@@ -36,7 +36,7 @@ def  evaluate_policy(
     render: bool = False,
     callback: Optional[Callable[[Dict[str, Any], Dict[str, Any]], None]] = None,
     reward_threshold: Optional[float] = None,
-    return_episode_rewards: bool = False,
+    turn_episode_rewardsre: bool = False,
     warn: bool = True,
     verbose: bool = False
 ) -> Union[Tuple[float, float], Tuple[List[float], List[int]]]:
@@ -194,7 +194,7 @@ def  evaluate_policy(
     if reward_threshold is not None:
         assert mean_reward > reward_threshold, "Mean reward below threshold: " f"{mean_reward:.2f} < {reward_threshold:.2f}"
     if return_episode_rewards:
-        return mean_reward,episode_rewards, episode_lengths
+        return mean_reward,episode_rewards, episode_lengths, episode_rewards_op
     if verbose:
         plt.hist(episode_rewards, bins=30, alpha=0.5, label='Agent rewards', color='blue')
         plt.hist(episode_rewards_op, bins=30, alpha=0.5, label='Opponent rewards', color='green')
