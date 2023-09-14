@@ -37,14 +37,16 @@ import json
 import os
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+from scipy.special import kl_div
 
-env = texas_holdem.env('72+', render_mode = "rgb_array")
-env.AGENT.policy = 'PPO'
-env.OPPONENT.policy = 'PPO'
-env.OPPONENT.model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [256], 'vf': [256]},learning_rate=  0.07100101556878591, n_steps = 100, batch_size = 50, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
-env.AGENT.model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [256], 'vf': [256]},learning_rate=  0.07100101556878591, n_steps = 100, batch_size = 50, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
-env.AGENT.model.learn(10, False, None, progress_bar=True)
-env.OPPONENT.model.learn(10, False, None, progress_bar=True)
+# env = texas_holdem.env('72+', render_mode = "rgb_array")
+# env.AGENT.policy = 'PPO'
+# env.OPPONENT.policy = 'PPO'
+# env.OPPONENT.model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [256], 'vf': [256]},learning_rate=  0.07100101556878591, n_steps = 100, batch_size = 50, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
+# env.AGENT.model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [256], 'vf': [256]},learning_rate=  0.07100101556878591, n_steps = 100, batch_size = 50, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
+# env.AGENT.model.learn(10, False, None, progress_bar=True)
+# env.OPPONENT.model.learn(10, False, None, progress_bar=True)
 
 
 class card_injector():
@@ -64,7 +66,10 @@ class card_injector():
         self.com_cards_RF = []
         
         self.high_card = {'hand': [('S', 'A'), ('D', 'T')], 'com_cards':[('H','8'), ('C','4'), ('D', '7'), ('S', '2'), ('H', 'K')]}
+        self.pair = {'hand': [('S', 'A'), ('D', 'A')], 'com_cards':[('H','8'), ('C','4'), ('D', '7'), ('S', '2'), ('H', 'K')]}
         self.straight = {'com_cards':[('H','6'), ('D', '7'), ('S', '8'), ('C','9'), ('H','T')], 'hand':[('D', 'J'), ('C','Q')]}
+        self.flush = {'hand': [('D', 'A'), ('D', 'T')], 'com_cards':[('D','6'), ('D','2'), ('D','3'), ('D','5'), ('D','7')]}
+        self.straight_flush = {'hand': [('D', '6'), ('D', '7')], 'com_cards':[('D', '8'), ('D', '9'), ('D', 'T'), ('D', 'J'), ('D', 'Q')]}
         self.royal_flush = {'hand':[('H', 'A'), ('H', 'K')], 'com_cards':[('S', 'T'), ('S', 'Q'), ('S', 'K'), ('S', 'A'), ('S', 'J')]}
         
         self.title_list = ['high_card', 'straight', 'royal_flush']
@@ -80,7 +85,9 @@ class card_injector():
         
         self.create_obs()    
         
-        self.get_probs_similarity()    
+        self.get_kl_div()
+
+        # print(self.return_results())    
     def premaker(self, title):    
         if title == 'high_card':
 
@@ -182,6 +189,26 @@ class card_injector():
             self.probs_results[key] = [probs_ag, probs_op]
             self.sim_results[key] = self.calculate_cosine_similarity(probs_ag, probs_op)
     
+    def get_kl_div(self):
+        self.div_results = {}
+        self.probs_results = {}
+        for key in self.obs_dict:
+            obs = self.obs_dict[key]
+        
+            obs = obs[0]
+            dist_ag = (self.agent.model.policy.get_distribution(obs))
+            probs_ag = dist_ag.distribution.probs
+        
+            
+            self.create_obs()
+            obs = self.obs_dict[key]
+            obs = obs[0]
+            dist_op = (self.opponent.model.policy.get_distribution(obs))
+            probs_op = dist_op.distribution.probs
+            
+            self.probs_results[key] = [probs_ag, probs_op]
+            self.div_results[key] = self.calculate_kl_divergence(probs_ag, probs_op)        
+
     def calculate_cosine_similarity(self, list1, list2):
         vector1 = np.array(list1).reshape(1, -1)
         vector1 = np.delete(vector1, 1)
@@ -197,12 +224,27 @@ class card_injector():
         
         return similarity
 
+    def calculate_kl_divergence(self, list1, list2, smoothing_alpha=0.00000000001):
+        vector1 = np.array(list1).reshape(1, -1)
+        # vector1 = np.delete(vector1, 1)
+        # vector1 = np.array(vector1).reshape(1, -1)
+
+        vector2 = np.array(list2).reshape(1, -1)
+        # vector2 = np.delete(vector2, 1)
+        # vector2 = np.array(vector2).reshape(1, -1)
+
+        vector1_smoothed = (vector1 + smoothing_alpha) / (np.sum(vector1) + len(vector1[0]) * smoothing_alpha)
+        vector2_smoothed = (vector2 + smoothing_alpha) / (np.sum(vector2) + len(vector2[0]) * smoothing_alpha)
+
+        kl_v1_v2 = kl_div(vector1_smoothed ,  vector2_smoothed).sum()    
+        return kl_v1_v2
+
     def return_results(self):
-        return (self.sim_results)
+        return (self.div_results)
 
     
-ci = card_injector(env.AGENT, env.OPPONENT, env)
+# ci = card_injector(env.AGENT, env.OPPONENT, env)
 # ci.premaker('high_card')
 # print(ci.create_obs()) 
 # sim = ci.get_probs_similarity()
-# print(sim)
+# print(sim)S

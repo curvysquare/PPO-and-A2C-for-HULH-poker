@@ -36,7 +36,7 @@ def  evaluate_policy(
     render: bool = False,
     callback: Optional[Callable[[Dict[str, Any], Dict[str, Any]], None]] = None,
     reward_threshold: Optional[float] = None,
-    turn_episode_rewardsre: bool = False,
+    return_episode_rewards: bool = False,
     warn: bool = True,
     verbose: bool = False
 ) -> Union[Tuple[float, float], Tuple[List[float], List[int]]]:

@@ -26,15 +26,12 @@ import torch as th
 from torch import nn
 from tabulate import tabulate
 import pandas as pd
-import random
-
 from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
 from classmaker import obs_type_envs
 from classmaker import metric_dicts
 
 from injector import card_injector
-from human_input import human_play
 
 def extract_opt_act(env):
 
@@ -282,8 +279,7 @@ class self_play():
                 Eval_env.OPPONENT.policy = 'random'
                 Eval_env.AGENT.policy = self.env.AGENT.policy
                 
-
-                mean_reward_ag,episode_rewards_ag, episode_lengths= evaluate_policy(env.AGENT.model, Eval_env, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes) 
+                mean_reward_ag,episode_rewards_ag,episode_lengths, episode_rewards_op =  evaluate_policy(env.AGENT.model, Eval_env, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes) 
                 percentages_ag,  percentages_op = extract_opt_act(Eval_env)
                 self.metric_dicts.update_eval_metrics_from_ep_rewards(gen = gen, mean_reward = mean_reward_ag, episode_rewards = episode_rewards_ag, percentages_ag = percentages_ag, percentages_op= percentages_op)
                 
@@ -371,7 +367,7 @@ class self_play():
                     Eval_env.OPPONENT.model = env.OPPONENT.model
                     
         
-                mean_reward,episode_rewards, episode_lengths= evaluate_policy(env.AGENT.model, Eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
+                mean_reward,episode_rewards, episode_lengths, episode_rewards_op = evaluate_policy(env.AGENT.model, Eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
                 percentages_ag, percentages_op = extract_opt_act(Eval_env)
                 self.metric_dicts.update_eval_metrics_from_ep_rewards(gen, mean_reward,episode_rewards, percentages_ag = percentages_ag, percentages_op= percentages_op)
                 
@@ -398,7 +394,7 @@ class self_play():
         
         if graphs:
             gm = graph_metrics(n_models = self.n_gens+1, storage = self.metric_dicts, storageB= self.metric_dicts_rand, figsize= (10, 8), t_steps = self.learning_steps, overlay= False, e_steps=self.n_eval_episodes, title = self.title, device='pc' )
-            gm.print_all_graphs(True, True, True, False, False)
+            gm.print_all_graphs(True, True, True, False, False, False)
 
 class hyperparam_search(BatchMultiplier):
     def __init__(self, callback, verbose, batch_size, model_type, override_best, obs_type):
@@ -624,7 +620,7 @@ class hyperparam_search(BatchMultiplier):
 # callback1 = StopTrainingOnNoModelImprovement(max_no_improvement_evals=45, min_evals=35)
 
 def sp_group():
-    sp = self_play(10, 30720, 10000, '72+', 6002, 'PPO', na_key = None, default_params=True)
+    sp = self_play(10, 30720, 10000, '72', 7000, 'PPO', na_key = None, default_params=False)
     # sp = self_play(7,100,100, '72+', 124, 'PPO', na_key = None)
     sp.run(False)
     sp.get_results(graphs = True)
@@ -637,7 +633,7 @@ def sp_group():
 #211 : ppo. default
 # 310 is above without sims
 #220: a2d default
-# sp_group() 
+sp_group() 
 
 def hs_group():        
     hypsrch = hyperparam_search(callback= None, verbose=True, batch_size=[32, 64, 128, 256, 512, 1024], model_type= 'A2C', override_best=True, obs_type= '72+')
@@ -1306,20 +1302,28 @@ class PPO_vs_OPPONENT():
         self.eval_env.OPPONENT.policy = self.type 
        
         
-        #below are best models from hyp tune
-        # self.eval_env.AGENT.model = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25, clip_range=0.1, max_grad_norm=0.6, gae_lambda = 0.85, normalize_advantage=False)
-        self.eval_env.AGENT.model = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25)
+        #replace below w best model from hyptun
+        # self.eval_env.AGENT.model = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [64], 'vf': [64]},learning_rate=  0.07100101556878591, n_steps = 2048, batch_size = 128, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
+        self.eval_env.AGENT.model = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25, clip_range=0.1, max_grad_norm=0.6, gae_lambda = 0.85, normalize_advantage=False)
         if self.eval_env.OPPONENT.policy == 'A2C':
             self.eval_env.OPPONENT.model = A2C('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn = nn.ReLU, net_arch=None, use_rms_prop = False)
         
         if self.eval_env.OPPONENT.policy == 'PPO':
+            # self.eval_env.OPPONENT.model = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [64], 'vf': [64]},learning_rate=  0.07100101556878591, n_steps = 2048, batch_size = 128, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)    
             self.eval_env.OPPONENT.model =  PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25, clip_range=0.1, max_grad_norm=0.6, gae_lambda = 0.85, normalize_advantage=False)
+    # def load_params(self):
+    #     root = self.gen_lib_ppo[self.gen_to_load_ppo]
+    #     self.eval_env.AGENT.model.set_parameters(load_path_or_dict= root)
+        
+    #     root = self.gen_lib_a2c[self.gen_to_load_a2c]
+    #     self.eval_env.AGENT.model.set_parameters(load_path_or_dict= root)
+    #     self.eval_env.reset()
     
-    def load_params_from_file(self, path_agent, path_opponent):
-        self.eval_env.AGENT.model.set_parameters(load_path_or_dict= path_agent)
-        if self.type == 'A2C' or self.type == 'PPO':
-            self.eval_env.OPPONENT.model.set_parameters(load_path_or_dict= path_opponent)
-
+    def load_params_from_file(self, path):
+        root = path
+        self.eval_env.AGENT.model.set_parameters(load_path_or_dict= root)
+           
+    
     def load_metric_dicts_storage(self):
         if self.eval_env.AGENT.policy ==self.eval_env.OPPONENT.policy:
             self.id_keys = [self.eval_env.AGENT.policy, self.eval_env.OPPONENT.policy + '_opponent']
@@ -1335,128 +1339,57 @@ class PPO_vs_OPPONENT():
         
         #evaluate agent
         print("evaluating agent")
-        mean_reward ,episode_rewards, episode_lengths, episode_rewards_op= evaluate_policy(self.eval_env.AGENT.model, self.eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
-
+        mean_reward,episode_rewards, episode_lengths= evaluate_policy(self.eval_env.AGENT.model, self.eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
                 
         self.metric_dicts.gen_eval_rewards[ self.id_keys[0]] = episode_rewards
-        self.metric_dicts.gen_eval_rewards[ self.id_keys[1]] = episode_rewards_op
         
         percentages_ag, percentages_op = extract_opt_act(self.eval_env)
         self.metric_dicts.update_eval_metrics_from_ep_rewards( self.id_keys[0], mean_reward,episode_rewards, percentages_ag, percentages_op)
-        self.metric_dicts.update_eval_metrics_from_ep_rewards( self.id_keys[1], mean_reward,episode_rewards_op, percentages_ag, percentages_op)
-        self.mean_reward = mean_reward
+        
         self.eval_env.reset()
         
-        # print("evaluating opponent")
-        # # evaluate opponent
-        # if self.type == 'random':
-        #     pass
-        # else:
-        #     mean_reward,episode_rewards, episode_lengths= evaluate_policy(self.eval_env.OPPONENT.model, self.eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
-        #     self.metric_dicts.gen_eval_rewards[ self.id_keys[1]] = episode_rewards
-        #     percentages_ag, percentages_op = extract_opt_act(self.eval_env)
-        #     self.metric_dicts.update_eval_metrics_from_ep_rewards( self.id_keys[1], mean_reward,episode_rewards, percentages_ag, percentages_op)
+        print("evaluating opponent")
+        # evaluate opponent
+        if self.type == 'random':
+            pass
+        else:
+            mean_reward,episode_rewards, episode_lengths= evaluate_policy(self.eval_env.OPPONENT.model, self.eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
+            self.metric_dicts.gen_eval_rewards[ self.id_keys[1]] = episode_rewards
+            percentages_ag, percentages_op = extract_opt_act(self.eval_env)
+            self.metric_dicts.update_eval_metrics_from_ep_rewards( self.id_keys[1], mean_reward,episode_rewards, percentages_ag, percentages_op)
         
-        # print("evaluating randop")
-        # # evaluate randop
-        # # add randop base model with no params loaded - think this was causing the beta issue
-        # self.eval_env.AGENT.model = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.ReLU, net_arch = {'pi': [64], 'vf': [64]}, n_steps=5 )        
-        # callback_eval_rand_op = CustomLoggerCallback() 
-        # self.eval_env.AGENT.model.learn(total_timesteps = self.n_eval_episodes, dumb_mode =True, callback=callback_eval_rand_op , progress_bar=True,)
+        print("evaluating randop")
+        # evaluate randop
+        # add randop base model with no params loaded - think this was causing the beta issue
+        self.eval_env.AGENT.model = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.ReLU, net_arch = {'pi': [64], 'vf': [64]}, n_steps=5 )        
+        callback_eval_rand_op = CustomLoggerCallback() 
+        self.eval_env.AGENT.model.learn(total_timesteps = self.n_eval_episodes, dumb_mode =True, callback=callback_eval_rand_op , progress_bar=True,)
         
-        # mean_reward = callback_eval_rand_op.final_mean_reward
-        # episode_rewards = callback_eval_rand_op.rewards
-        # self.metric_dicts_rand.update_eval_metrics_from_ep_rewards(gen = self.id_keys[1], mean_reward = mean_reward, episode_rewards = episode_rewards, percentages_ag = percentages_ag, percentages_op = percentages_op)
-        # self.metric_dicts.update_eval_metrics_from_ep_rewards(gen = self.id_keys[1], mean_reward = mean_reward, episode_rewards = episode_rewards, percentages_ag = percentages_ag, percentages_op = percentages_op)              
-     
+        mean_reward = callback_eval_rand_op.final_mean_reward
+        episode_rewards = callback_eval_rand_op.rewards
+        self.metric_dicts_rand.update_eval_metrics_from_ep_rewards(gen = self.id_keys[1], mean_reward = mean_reward, episode_rewards = episode_rewards, percentages_ag = percentages_ag, percentages_op = percentages_op)
+        self.metric_dicts.update_eval_metrics_from_ep_rewards(gen = self.id_keys[1], mean_reward = mean_reward, episode_rewards = episode_rewards, percentages_ag = percentages_ag, percentages_op = percentages_op)              
+        
+
+            
+            
     def get_results(self, graphs):
         print(self.metric_dicts.gen_eval_final_mean_reward)
         
         if graphs:
-            gm = graph_metrics(n_models = 2, storage = self.metric_dicts, storageB= self.metric_dicts_rand, figsize=(6,8), t_steps = self.n_eval_episodes, overlay=True, e_steps= self.n_eval_episodes, title = str(self.eval_env.AGENT.policy) + '_vs_' + str(self.eval_env.OPPONENT.policy), device = 'pc')
-            gm.print_all_graphs(False, True, False,False, True, True)
-
+            gm = graph_metrics(n_models = 2, storage = self.metric_dicts, storageB= self.metric_dicts_rand, figsize=(6,8), t_steps = self.n_eval_episodes, overlay=True, e_steps= self.n_eval_episodes, key = str(self.eval_env.AGENT.policy) + '_vs_' + str(self.eval_env.OPPONENT.policy))
+            gm.print_all_graphs(False, True, False,False, True)
+            # gm.plot_rewards(True, True)
+            # gm.plot_moving_rewards(True, True)
+            # gm.plot_moving_mean(True, True)
+            # gm.plot_loss()
  
 # PPO_vs_random = PPO_vs_OPPONENT(None, None, None, None, '72+', 'random')
 # PPO_vs_random.init_eval_env()
-# PPO_vs_random.load_params_from_file(r'S:\MSC_proj\models\PPO72+10defaultFalse_10', None)
+# PPO_vs_random.load_params_from_file(r'S:\MSC_proj\models\100_7')
 # PPO_vs_random.load_metric_dicts_storage()
-# PPO_vs_random.evaluate(1000 )
+# PPO_vs_random.evaluate(7000)
 # PPO_vs_random.get_results(True)
-
-
-class PPO_vs_allops():
-    def __init__(self, eval_steps):
-        self.rewards = {}
-        self.eval_steps = eval_steps 
-        self.eval_steps_human = 5 
-        self.PPO_path = r'S:\MSC_proj\models\PPO72+10defaultFalse_10'
-        # self.PPO_path =  r'S:\MSC_proj\models\PPO72+10defaultTrue_10'
-
-    def PPO_vs_random(self):
-        PPO_vs_random = PPO_vs_OPPONENT(None, None, None, None, '72+', 'random')
-        PPO_vs_random.init_eval_env()
-        # PPO_vs_random.eval_env.OPPONENT.model = PPO('MultiInputPolicy', PPO_vs_random.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [64], 'vf': [64]})
-
-        PPO_vs_random.load_params_from_file(self.PPO_path, None)
-        PPO_vs_random.load_metric_dicts_storage()
-        PPO_vs_random.evaluate(self.eval_steps)
-        PPO_vs_random.get_results(True)
-        self.rewards['PPO_vs_random'] = PPO_vs_random.mean_reward
-
-    def PPO_vs_a2c(self):
-        PPO_vs_a2c = PPO_vs_OPPONENT(None, None, None, None, '72+', 'A2C')
-        PPO_vs_a2c.init_eval_env()
-        PPO_vs_a2c.load_params_from_file(self.PPO_path, self.PPO_path)
-        PPO_vs_a2c.load_metric_dicts_storage()
-        PPO_vs_a2c.evaluate(self.eval_steps)
-        PPO_vs_a2c.get_results(True)
-        self.rewards['PPO_vs_A2C'] = PPO_vs_a2c.mean_reward
-
-    def PPO_vs_human(self): 
-        PPO_vs_human = human_play('72+', self.eval_steps_human, self.PPO_path)
-        PPO_vs_human.play()
-        self.rewards['PPO_vs_human'] = PPO_vs_human.mean_reward
-
-    def PPO_vs_default(self):
-        PPO_vs_default = PPO_vs_OPPONENT(None, None, None, None, '72+', 'PPO')
-        PPO_vs_default.init_eval_env()
-        PPO_vs_default.eval_env.OPPONENT.model = PPO('MultiInputPolicy', PPO_vs_default.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [64], 'vf': [64]})
-        PPO_vs_default.load_params_from_file(self.PPO_path, r'S:\MSC_proj\models\PPO72+10defaultTrue_10')
-        PPO_vs_default.load_metric_dicts_storage()
-        PPO_vs_default.evaluate(self.eval_steps)
-        PPO_vs_default.get_results(True)
-        self.rewards['PPO_vs_PPO_Default'] = PPO_vs_default.mean_reward
-
-
-    
-    def bar_chart(self):
-        categories = list(self.rewards.keys())
-        counts = list(self.rewards.values())
-        colors = ['darkblue','mediumblue' 'blue']
-        plt.bar(categories, counts, color = colors)
-        plt.xlabel('PPO mean reward')
-        plt.ylabel('Opponents')
-        plt.title('PPO mean reward vs opponent for' + str(self.eval_steps) + 'games')
-
-        # Display the chart
-        plt.xticks(rotation=45) 
-        plt.tight_layout()  
-        plt.show()
-        plt.savefig('S:\\MSC_proj\\plots')
-
-
-    def run(self):
-        self.PPO_vs_random()
-        # self.PPO_vs_a2c()
-        # self.PPO_vs_human()
-        # self.PPO_vs_default()
-        # self.bar_chart()
-
-# allops = PPO_vs_allops(1000)      
-# allops.run()
-
-
 def PPOvsA2C():                  
     PPO_VS_A2C = PPO_vs_OPPONENT(ppo_lib, 1, a2c_lib, 1, '72+')
     PPO_VS_A2C.init_eval_env('PPO')
@@ -1575,53 +1508,3 @@ class train_convergence_search():
 # class gen_eval_mov_rewards():
     
                                     
-class kl_div_test():
-    def __init__(self, obs_type, n_gens):
-        self.obs_type = obs_type
-        self.results = {}
-        self.n_gens = n_gens
-        self.metric_dicts = metric_dicts(self.n_gens)
-
-        self.gen_keys = []
-        for gen in range(self.n_gens+1):
-            self.gen_keys.append(gen)
-        self.metric_dicts.add_keys_to_metrics(self.gen_keys)    
-
-    def run(self):
-        self.eval_env = texas_holdem.env(self.obs_type, render_mode='rgb_array')
-   
-
-        self.models = {}
-        # create dict of pretrained models
-        for i in range (0, 11):
-            self.models['m' + str(i)] = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25, clip_range=0.1, max_grad_norm=0.6, gae_lambda = 0.85, normalize_advantage=False)
-        # init learnt parameters to the models
-        for key in self.models.keys():
-            path_agent = os.path.join('S:\MSC_proj\ms', key)
-            self.models[key].set_parameters(load_path_or_dict= path_agent)
-        
-        self.keys =list(self.models.keys()) 
-
-       
-        for i in range(1, len(self.keys)-1):
-            mi = self.models[self.keys[i]]
-            mi_p1 = self.models[self.keys[i+1]]
-
-            self.eval_env.AGENT.policy = 'PPO'
-            self.eval_env.AGENT.model = mi 
-
-            self.eval_env.OPPONENT.policy = 'PPO'
-            self.eval_env.OPPONENT.model = mi_p1
-
-            ci = card_injector(self.eval_env.AGENT, self.eval_env.OPPONENT, self.eval_env)
-            kl_div = ci.return_results()
-            # self.results[str(i) + 'vs' +str(i+1)] = kl_div
-            self.metric_dicts.update_sims(i, kl_div)
-        gm = graph_metrics(n_models = 2, storage = self.metric_dicts, storageB= None, figsize=(6,8), t_steps = None, overlay=True, e_steps= None, title = 'KL divergence', device = 'pc')
-        gm.print_select_graphs(False, False, False,False, False, True, False)    
-        return self.results
-
-
-    
-kl = kl_div_test('72+',10)
-print(kl.run()) 

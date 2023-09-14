@@ -81,16 +81,16 @@ class graph_metrics():
         self.STR_sims = [[], []]
         self.RF_sims= [[], []]
         
-        if 1 in self.storage.sims:
-            del self.storage.sims[1]
-        if 2 in self.storage.sims:
-            del self.storage.sims[2]    
+        # if 1 in self.storage.sims:
+        #     del self.storage.sims[1]
+        # if 2 in self.storage.sims:
+        #     del self.storage.sims[2]    
 
         try:    
             for key in self.storage.sims.keys():
-                self.HC_sims[1].append(round(self.storage.sims[key]['HC'], 2)*100)
-                self.STR_sims[1].append(round(self.storage.sims[key]['STR'], 2) *100)
-                self.RF_sims[1].append(round(self.storage.sims[key]['RF'], 2) *100)
+                self.HC_sims[1].append(self.storage.sims[key]['HC'])
+                self.STR_sims[1].append(self.storage.sims[key]['STR'])
+                self.RF_sims[1].append(self.storage.sims[key]['RF'])
                 
             self.HC_sims[0] = [i for i in range(len(self.HC_sims[1]))]
             self.STR_sims[0] = [i for i in range(len(self.STR_sims[1]))]
@@ -568,7 +568,25 @@ class graph_metrics():
                 self.plot_sims()
             # comb plot opt acts doesnt have to be in comb group abo
             self.comb_plot_opt_acts(sing_opt_acts)
-            
+    def print_select_graphs(self, rewards, movrews,movmean, loss, combs, sim, opts):
+            self.create_x_y()
+            if rewards:
+                self.plot_rewards(train, eval)
+            if movrews:
+                self.plot_moving_rewards(train, eval)
+            if movmean:
+                self.plot_moving_mean(train, eval, trim)
+            if loss:
+                self.plot_loss()
+            if combs:
+                self.comb_plot_rewards(train, eval)
+                self.comb_plot_moving_total(train, eval)
+                self.comb_plot_moving_mean(train, eval)
+            if sim:    
+                self.plot_sims()
+            # comb plot opt acts doesnt have to be in comb group above
+            if opts:
+                self.comb_plot_opt_acts(sing_opt_acts)        
 class obs_type_envs():
     def __init__(self):
         train_env_124 = texas_holdem.env(obs_type = '124', render_mode = 'rgb_array')
@@ -605,10 +623,10 @@ class metric_dicts():
         # self.gen_eval_rand_op_moving_total = {}
         # self.gen_eval_rand_op_moving_mean_reward = {}
         
-        self.n_pairs = int(n_gens/2 - 1)
+        self.n_pairs = int(n_gens/2)
         self.sims= {}
-        for i in range(1, self.n_pairs+1):
-            self.sims[i] = None
+        # for i in range(1, self.n_pairs+1):
+        #     self.sims[i] = None
               
         self.percentages_ag = {}
         self.percentages_op = {}
@@ -688,6 +706,6 @@ class metric_dicts():
         self.percentages_op[gen] = percentages_op
         
     def update_sims(self, gen, sim_results):
-        self.sims['sim_ep' + str(gen) + str(gen-1)]= sim_results
+        self.sims['sim_ep' + str(gen) + str(gen+1)]= sim_results
 
                 
