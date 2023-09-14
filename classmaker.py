@@ -80,23 +80,28 @@ class graph_metrics():
         self.HC_sims= [[], []]
         self.STR_sims = [[], []]
         self.RF_sims= [[], []]
+        self.PR_sims = [[], []]
+        self.FLSH_sims =[[], []]
+        self.STR_FLSH_sims=[[], []]
         
-        # if 1 in self.storage.sims:
-        #     del self.storage.sims[1]
-        # if 2 in self.storage.sims:
-        #     del self.storage.sims[2]    
 
-        try:    
-            for key in self.storage.sims.keys():
-                self.HC_sims[1].append(self.storage.sims[key]['HC'])
-                self.STR_sims[1].append(self.storage.sims[key]['STR'])
-                self.RF_sims[1].append(self.storage.sims[key]['RF'])
-                
-            self.HC_sims[0] = [i for i in range(len(self.HC_sims[1]))]
-            self.STR_sims[0] = [i for i in range(len(self.STR_sims[1]))]
-            self.RF_sims[0] = [i for i in range(len(self.RF_sims[1]))]
-        except TypeError:
-            pass  
+     
+        for key in self.storage.sims.keys():
+            self.HC_sims[1].append(self.storage.sims[key]['HC'])
+            self.STR_sims[1].append(self.storage.sims[key]['STR'])
+            self.RF_sims[1].append(self.storage.sims[key]['RF'])
+            self.PR_sims[1].append(self.storage.sims[key]['PR'])
+            self.FLSH_sims[1].append(self.storage.sims[key]['FLSH'])
+            self.STR_FLSH_sims[1].append(self.storage.sims[key]['STR_FLSH'])
+
+            
+        self.HC_sims[0] = [i for i in range(len(self.HC_sims[1]))]
+        self.STR_sims[0] = [i for i in range(len(self.STR_sims[1]))]
+        self.RF_sims[0] = [i for i in range(len(self.RF_sims[1]))]
+        self.PR_sims[0] = [i for i in range(len(self.PR_sims[1]))]
+        self.FLSH_sims[0] = [i for i in range(len(self.FLSH_sims[1]))]
+        self.STR_FLSH_sims[0] = [i for i in range(len(self.STR_FLSH_sims[1]))]
+
 
                  
         # combine all percentages
@@ -510,9 +515,14 @@ class graph_metrics():
     def plot_sims(self):       
         if len(self.HC_sims[0])>1:
             fig5, axs5 = plt.subplots(1, 1, figsize = self.figsize)
-            axs5.plot(self.HC_sims[0], self.HC_sims[1], label='High Card')
-            axs5.plot(self.STR_sims[0], self.STR_sims[1], label='Straight')
-            axs5.plot(self.RF_sims[0], self.RF_sims[1], label='Royal Flush')
+            axs5.plot(self.HC_sims[0], self.HC_sims[1], label='High Card (10)')
+            axs5.plot(self.PR_sims[0], self.PR_sims[1], label='Pair (9) ')
+            axs5.plot(self.STR_sims[0], self.STR_sims[1], label='Straight (6)')
+            axs5.plot(self.FLSH_sims[0], self.FLSH_sims[1], label='Flush (5)')
+            axs5.plot(self.STR_FLSH_sims[0], self.STR_FLSH_sims[1], label='Straight Flush (2)')
+            axs5.plot(self.RF_sims[0], self.RF_sims[1], label='Royal Flush (1)')
+     
+
             # for j in range(1,self.n_SP_gens+1):
             #     axs5.axvline(x=self.t_steps *j, color='y', linestyle='--')
             axs5.set_title('action distribution cosine similarity')
@@ -520,12 +530,28 @@ class graph_metrics():
             plt.tight_layout()  
             plt.show()
             
-            data = [['High Card'] + self.HC_sims[1],['Straight'] + self.STR_sims[1],['Royal Flush'] + self.RF_sims[1]]
+            data = [
+            ['High Card'] + self.HC_sims[1],
+            ['Pair'] + self.PR_sims[1],
+            ['Straight'] + self.STR_sims[1],
+            ['Flush'] + self.FLSH_sims[1],
+            ['Straight Flush'] + self.STR_FLSH_sims[1],
+            ['Royal Flush'] + self.RF_sims[1]
+            
+            ] 
             headers = ['Category'] + self.HC_sims[0]
             table = tabulate(data, headers=headers, tablefmt='grid')
             print(table)        
         else:
-            data = [['High Card'] + self.HC_sims[1],['Straight'] + self.STR_sims[1],['Royal Flush'] + self.RF_sims[1]]
+            data = [
+            ['High Card'] + self.HC_sims[1],
+            ['Pair'] + self.PR_sims[1],
+            ['Straight'] + self.STR_sims[1],
+            ['Flush'] + self.FLSH.sims[1],
+            ['Straight Flush'] + self.STR_FLSH_sims[1],
+            ['Royal Flush'] + self.RF_sims[1]
+            
+            ] 
             headers = ['Category'] + self.HC_sims[0]
             table = tabulate(data, headers=headers, tablefmt='grid')
             print(table)         

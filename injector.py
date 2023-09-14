@@ -64,6 +64,16 @@ class card_injector():
         
         self.hand_RF= []
         self.com_cards_RF = []
+
+        self.hand_PR = []
+        self.com_cards_PR = []
+
+        self.hand_FLSH = []
+        self.com_cards_FLSH = []
+
+        self.hand_STR_FLSH = []
+        self.com_cards_STR_FLSH =[]
+        
         
         self.high_card = {'hand': [('S', 'A'), ('D', 'T')], 'com_cards':[('H','8'), ('C','4'), ('D', '7'), ('S', '2'), ('H', 'K')]}
         self.pair = {'hand': [('S', 'A'), ('D', 'A')], 'com_cards':[('H','8'), ('C','4'), ('D', '7'), ('S', '2'), ('H', 'K')]}
@@ -72,7 +82,7 @@ class card_injector():
         self.straight_flush = {'hand': [('D', '6'), ('D', '7')], 'com_cards':[('D', '8'), ('D', '9'), ('D', 'T'), ('D', 'J'), ('D', 'Q')]}
         self.royal_flush = {'hand':[('H', 'A'), ('H', 'K')], 'com_cards':[('S', 'T'), ('S', 'Q'), ('S', 'K'), ('S', 'A'), ('S', 'J')]}
         
-        self.title_list = ['high_card', 'straight', 'royal_flush']
+        self.title_list = ['high_card', 'pair', 'straight', 'flush', 'straight_flush', 'royal_flush' ]
         
         with open(os.path.join(rlcard.__path__[0], 'games/limitholdem/card2index.json'), 'r') as file:
             self.card2index = json.load(file)
@@ -80,7 +90,7 @@ class card_injector():
         for title in self.title_list:
             self.premaker(title)
         
-        self.pre_made_dict = {'HC': (self.hand_HC, self.com_cards_HC), 'STR':(self.hand_STR, self.com_cards_STR), 'RF': (self.hand_RF, self.com_cards_RF)}    
+        self.pre_made_dict = {'HC': (self.hand_HC, self.com_cards_HC), 'STR':(self.hand_STR, self.com_cards_STR), 'RF': (self.hand_RF, self.com_cards_RF), 'PR': (self.hand_PR, self.com_cards_PR), 'FLSH': (self.hand_FLSH, self.com_cards_FLSH), 'STR_FLSH': (self.hand_STR_FLSH, self.com_cards_STR_FLSH)}    
         self.obs_dict = {}
         
         self.create_obs()    
@@ -89,6 +99,33 @@ class card_injector():
 
         # print(self.return_results())    
     def premaker(self, title):    
+        if title == 'pair':        
+            card_list = self.pair['com_cards']
+            for c in card_list:
+                self.com_cards_PR.append(Card(*c))
+            
+            card_list = self.pair['hand']
+            for c in card_list:
+                self.hand_PR.append(Card(*c)) 
+
+        if title == 'flush':        
+            card_list = self.pair['com_cards']
+            for c in card_list:
+                self.com_cards_FLSH.append(Card(*c))
+            
+            card_list = self.pair['hand']
+            for c in card_list:
+                self.hand_FLSH.append(Card(*c))
+
+        if title == 'straight_flush':        
+            card_list = self.pair['com_cards']
+            for c in card_list:
+                self.com_cards_STR_FLSH.append(Card(*c))
+            
+            card_list = self.pair['hand']
+            for c in card_list:
+                self.hand_STR_FLSH.append(Card(*c))   
+
         if title == 'high_card':
 
             card_list = self.high_card['hand']
@@ -96,7 +133,7 @@ class card_injector():
                 self.hand_HC.append(Card(*c))
             card_list = self.high_card['com_cards']
             for c in card_list:
-                self.com_cards_HC.append(Card(*c))    
+                self.com_cards_HC.append(Card(*c))               
             
         if title == 'straight':
             card_list = self.straight['hand']
@@ -105,8 +142,7 @@ class card_injector():
             card_list = self.straight['com_cards']
             for c in card_list:
                 self.com_cards_STR.append(Card(*c))    
-            
-        
+             
         if title == 'royal_flush':
             card_list = self.royal_flush['hand']
             for c in card_list:
@@ -163,6 +199,28 @@ class card_injector():
                     obs[50 + i * 5 + num] = 1
                 extracted_state['observation'] = obs     
                 extracted_state['action_mask'] = [1,0,1,1]
+
+            if key == 'STR_FLSH':  
+                raise_nums = [2,4,5]
+                for i, num in enumerate(raise_nums):
+                    obs[50 + i * 5 + num] = 1
+                extracted_state['observation'] = obs     
+                extracted_state['action_mask'] = [1,0,1,1]    
+
+            if key == 'FLSH':  
+                raise_nums = [2,3,4]
+                for i, num in enumerate(raise_nums):
+                    obs[50 + i * 5 + num] = 1
+                extracted_state['observation'] = obs     
+                extracted_state['action_mask'] = [1,0,1,1]
+
+            if key == 'PR':  
+                raise_nums = [1,2,1]
+                for i, num in enumerate(raise_nums):
+                    obs[50 + i * 5 + num] = 1
+                extracted_state['observation'] = obs     
+                extracted_state['action_mask'] = [1,0,1,1]        
+                        
             
             extracted_state['observation'] = np.array(extracted_state['observation'], dtype = np.float32)
             extracted_state['action_mask'] = np.array(extracted_state['action_mask'], dtype = np.int8)   

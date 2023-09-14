@@ -1376,14 +1376,6 @@ class PPO_vs_OPPONENT():
             gm = graph_metrics(n_models = 2, storage = self.metric_dicts, storageB= self.metric_dicts_rand, figsize=(6,8), t_steps = self.n_eval_episodes, overlay=True, e_steps= self.n_eval_episodes, title = str(self.eval_env.AGENT.policy) + '_vs_' + str(self.eval_env.OPPONENT.policy), device = 'pc')
             gm.print_all_graphs(False, True, False,False, True, True)
 
- 
-# PPO_vs_random = PPO_vs_OPPONENT(None, None, None, None, '72+', 'random')
-# PPO_vs_random.init_eval_env()
-# PPO_vs_random.load_params_from_file(r'S:\MSC_proj\models\PPO72+10defaultFalse_10', None)
-# PPO_vs_random.load_metric_dicts_storage()
-# PPO_vs_random.evaluate(1000 )
-# PPO_vs_random.get_results(True)
-
 
 class PPO_vs_allops():
     def __init__(self, eval_steps):
@@ -1457,15 +1449,6 @@ class PPO_vs_allops():
 # allops.run()
 
 
-def PPOvsA2C():                  
-    PPO_VS_A2C = PPO_vs_OPPONENT(ppo_lib, 1, a2c_lib, 1, '72+')
-    PPO_VS_A2C.init_eval_env('PPO')
-    PPO_VS_A2C.load_params()
-    PPO_VS_A2C.load_metric_dicts_storage()
-    PPO_VS_A2C.evaluate(128)
-    PPO_VS_A2C.get_results(True)
-
-# PPOvsA2C()
 class train_convergence_search():
     def __init__(self, verbose, obs_type):
         self.verbose = verbose
@@ -1572,9 +1555,7 @@ class train_convergence_search():
         # Show the plot
         plt.show()
 
-# class gen_eval_mov_rewards():
-    
-                                    
+                            
 class kl_div_test():
     def __init__(self, obs_type, n_gens):
         self.obs_type = obs_type
@@ -1620,8 +1601,81 @@ class kl_div_test():
         gm = graph_metrics(n_models = 2, storage = self.metric_dicts, storageB= None, figsize=(6,8), t_steps = None, overlay=True, e_steps= None, title = 'KL divergence', device = 'pc')
         gm.print_select_graphs(False, False, False,False, False, True, False)    
         return self.results
+# kl = kl_div_test('72+',10)
+# print(kl.run()) 
+class NE_tool():
+    def __init__(self, obs_type, n_gens):
+        self.obs_type = obs_type
+        self.eq_rew = {}
+        self.br_rew = {}
+        self.regrets = {}
+        self.n_gens = n_gens
+        self.metric_dicts = metric_dicts(self.n_gens)
+
+        self.gen_keys = []
+        for gen in range(self.n_gens+1):
+            self.gen_keys.append(gen)
+        self.metric_dicts.add_keys_to_metrics(self.gen_keys)
+
+    def run(self):
+        self.eval_env = texas_holdem.env(self.obs_type, render_mode='rgb_array')
+        self.models = {}
+        # create dict of pretrained models
+        for i in range (0, 11):
+            self.models['m' + str(i)] = PPO('MultiInputPolicy', self.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25, clip_range=0.1, max_grad_norm=0.6, gae_lambda = 0.85, normalize_advantage=False)
+        # init learnt parameters to the models
+        for key in self.models.keys():
+            path_agent = os.path.join('S:\MSC_proj\ms', key)
+            self.models[key].set_parameters(load_path_or_dict= path_agent)
+        
+        self.keys =list(self.models.keys()) 
+
+        for i in range(1, len(self.keys)-2):
+            print(i)
+            mi = self.models[self.keys[i]]
+            mi_p1 = self.models[self.keys[i+1]]
+            mi_p2 = self.models[self.keys[i+2]]
+
+            eq_reward_mi_p2 = self.evaluate(mi_p1, mi)
+            br_payoff_mi_p2 = self.evaluate(mi_p2, mi_p1)
+            regret_mi_p2 = br_payoff_mi_p2 - eq_reward_mi_p2 
+
+            self.eq_rew[self.keys[i]] = eq_reward_mi_p2
+            self.br_rew[self.keys[i]] = br_payoff_mi_p2
+            self.regrets[self.keys[i]] = regret_mi_p2
+
+    def evaluate(self, modelA, modelB):
+        self.eval_env = texas_holdem.env(self.obs_type, render_mode='rgb_array')
+        self.eval_env = Monitor(self.eval_env)
+        self.n_eval_episodes = 10000
+        self.eval_env.AGENT.policy = 'PPO'
+        self.eval_env.AGENT.model = modelA
+        self.eval_env.OPPONENT.policy = 'PPO'
+        self.eval_env.OPPONENT.model = modelB
+
+        mean_reward ,episode_rewards, episode_lengths, episode_rewards_op= evaluate_policy(self.eval_env.AGENT.model, self.eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
+
+        return mean_reward
+
+    def print_table(self):
+            # data = [
+            # ['High Card'] + self.HC_sims[1],
+            # ['Pair'] + self.PR_sims[1],
+            # ['Straight'] + self.STR_sims[1],
+            # ['Flush'] + self.FLSH_sims[1],
+            # ['Straight Flush'] + self.STR_FLSH_sims[1],
+            # ['Royal Flush'] + self.RF_sims[1]
+            
+            # ] 
+            # headers = ['Category'] + self.HC_sims[0]
+            # table = tabulate(data, headers=headers, tablefmt='grid')
+            # print(table)
+            # for       
+        print(self.eq_rew)
+        print(self.br_rew)
+        print(self.regrets)
 
 
-    
-kl = kl_div_test('72+',10)
-print(kl.run()) 
+NET = NE_tool('72+', 10)
+NET.run()
+NET.print_table()
