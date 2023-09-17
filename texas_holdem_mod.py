@@ -560,7 +560,7 @@ class meta_wrapper(BaseWrapper):
         if self.agent_selection != self.learner and not self.observe()[2] and not self.observe()[3]:
             op_action_mask = self.observe()[0]['action_mask']
             op_obs = super().observe(self.baked)
-            ops_action = self.OPPONENT.get_action(op_obs)
+            ops_action = self.OPPONENT.get_action(op_obs, self.game)
             self.optimal_action(action, self.OPPONENT)
             super().step(ops_action)
             # op_reward = super().observe(self.baked)

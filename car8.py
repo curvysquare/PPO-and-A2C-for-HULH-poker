@@ -116,7 +116,11 @@ def convert_np_float32_to_float(dictionary):
 class CustomLoggerCallback(BaseCallback):
     def __init__(self, verbose=0):
         super(CustomLoggerCallback, self).__init__(verbose)
-        self.losses = []
+        self.value_losses = []
+        self.policy_losses = []
+        self.entropy_losses = []
+        self.kl_divs = []
+
         self.moving_mean_reward = []
         self.rewards = [] 
         self.moving_total = [0]
@@ -132,11 +136,30 @@ class CustomLoggerCallback(BaseCallback):
 
         
     def _on_step(self) -> bool:
-        if hasattr(self.model, 'loss'):
-            if self.model.loss != None:
-                loss = self.model.loss.item()
+        if hasattr(self.model, 'value_loss'):
+            if self.model.value_loss != None:
+                loss = self.model.value_loss.item()
                 loss = float(loss)
-                self.losses.append(loss)     
+                self.value_losses.append(loss)
+        if hasattr(self.model, 'policy_loss'):
+            if self.model.policy_loss != None:
+                loss = self.model.policy_loss.item()
+                loss = float(loss)
+                self.policy_losses.append(loss)
+        if hasattr(self.model, 'entropy_loss'):
+            if self.model.entropy_loss != None:
+                loss = self.model.entropy_loss.item()
+                loss = float(loss)
+                self.entropy_losses.append(loss)
+
+        
+
+
+        # if self.model.kl != None:
+        #     kl = self.model.kl.item()
+        #     kl = float(kl)
+        #     self.kl_divs.append(kl)    
+
         self.step_list.append(self.num_timesteps)
         self.rewards.append(self.model.env.buf_rews[0])
         self.moving_mean_reward.append(np.mean(self.rewards))
@@ -191,7 +214,7 @@ class BatchMultiplier:
 # results for 72§ = {'max_no_improvement_evals': 45, 'min_evals': 35}
 
 class self_play():
-    def __init__(self, n_gens, learning_steps, n_eval_episodes, obs_type, tag, model, na_key, default_params): 
+    def __init__(self, n_gens, learning_steps, n_eval_episodes, obs_type, tag, model, na_key, default_params, info): 
         self.n_gens = n_gens
         self.learning_steps = learning_steps
         self.n_eval_episodes = n_eval_episodes
@@ -206,7 +229,7 @@ class self_play():
         self.na_key = na_key
         self.default_params = default_params
         
-        self.title = model + obs_type + str(n_gens)+ 'default' + str(default_params)
+        self.title = model + obs_type + str(n_gens)+ 'default' + str(default_params) + info
         if self.model == 'PPO':
             if default_params:
                  self.base_model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [64], 'vf': [64]})
@@ -283,7 +306,7 @@ class self_play():
                 Eval_env.AGENT.policy = self.env.AGENT.policy
                 
 
-                mean_reward_ag,episode_rewards_ag, episode_lengths= evaluate_policy(env.AGENT.model, Eval_env, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes) 
+                mean_reward_ag,episode_rewards_ag, episode_lengths, rewards_op= evaluate_policy(env.AGENT.model, Eval_env, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes) 
                 percentages_ag,  percentages_op = extract_opt_act(Eval_env)
                 self.metric_dicts.update_eval_metrics_from_ep_rewards(gen = gen, mean_reward = mean_reward_ag, episode_rewards = episode_rewards_ag, percentages_ag = percentages_ag, percentages_op= percentages_op)
                 
@@ -371,7 +394,7 @@ class self_play():
                     Eval_env.OPPONENT.model = env.OPPONENT.model
                     
         
-                mean_reward,episode_rewards, episode_lengths= evaluate_policy(env.AGENT.model, Eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
+                mean_reward,episode_rewards, episode_lengths, reward_op= evaluate_policy(env.AGENT.model, Eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
                 percentages_ag, percentages_op = extract_opt_act(Eval_env)
                 self.metric_dicts.update_eval_metrics_from_ep_rewards(gen, mean_reward,episode_rewards, percentages_ag = percentages_ag, percentages_op= percentages_op)
                 
@@ -398,7 +421,7 @@ class self_play():
         
         if graphs:
             gm = graph_metrics(n_models = self.n_gens+1, storage = self.metric_dicts, storageB= self.metric_dicts_rand, figsize= (10, 8), t_steps = self.learning_steps, overlay= False, e_steps=self.n_eval_episodes, title = self.title, device='pc' )
-            gm.print_all_graphs(True, True, True, False, False)
+            gm.print_all_graphs(True, True, True, False, False, False)
 
 class hyperparam_search(BatchMultiplier):
     def __init__(self, callback, verbose, batch_size, model_type, override_best, obs_type):
@@ -624,7 +647,7 @@ class hyperparam_search(BatchMultiplier):
 # callback1 = StopTrainingOnNoModelImprovement(max_no_improvement_evals=45, min_evals=35)
 
 def sp_group():
-    sp = self_play(10, 30720, 10000, '72+', 6002, 'PPO', na_key = None, default_params=True)
+    sp = self_play(10, 30720, 10000, '72+', 6002, 'PPO', na_key = None, default_params=True, info ='loss')
     # sp = self_play(7,100,100, '72+', 124, 'PPO', na_key = None)
     sp.run(False)
     sp.get_results(graphs = True)
@@ -637,7 +660,7 @@ def sp_group():
 #211 : ppo. default
 # 310 is above without sims
 #220: a2d default
-# sp_group() 
+sp_group() 
 
 def hs_group():        
     hypsrch = hyperparam_search(callback= None, verbose=True, batch_size=[32, 64, 128, 256, 512, 1024], model_type= 'A2C', override_best=True, obs_type= '72+')
@@ -1381,7 +1404,7 @@ class PPO_vs_allops():
     def __init__(self, eval_steps):
         self.rewards = {}
         self.eval_steps = eval_steps 
-        self.eval_steps_human = 5 
+        self.eval_steps_human = 50 
         self.PPO_path = r'S:\MSC_proj\models\PPO72+10defaultFalse_10'
         # self.PPO_path =  r'S:\MSC_proj\models\PPO72+10defaultTrue_10'
 
@@ -1395,7 +1418,11 @@ class PPO_vs_allops():
         PPO_vs_random.evaluate(self.eval_steps)
         PPO_vs_random.get_results(True)
         self.rewards['PPO_vs_random'] = PPO_vs_random.mean_reward
-        print(PPO_vs_random.mean_reward)
+
+    def PPO_vs_human(self): 
+        # PPO_vs_human = human_play('72+', self.eval_steps_human, self.PPO_path)
+        # PPO_vs_human.play()
+        self.rewards['PPO_vs_human'] =1.44
 
     def PPO_vs_a2c(self):
         PPO_vs_a2c = PPO_vs_OPPONENT(None, None, None, None, '72+', 'A2C')
@@ -1405,33 +1432,24 @@ class PPO_vs_allops():
         PPO_vs_a2c.evaluate(self.eval_steps)
         PPO_vs_a2c.get_results(True)
         self.rewards['PPO_vs_A2C'] = PPO_vs_a2c.mean_reward
-        print(PPO_vs_a2c.mean_reward)
 
-    def PPO_vs_human(self): 
-        PPO_vs_human = human_play('72+', self.eval_steps_human, self.PPO_path)
-        PPO_vs_human.play()
-        self.rewards['PPO_vs_human'] = PPO_vs_human.mean_reward
+    def PPO_vs_heuristic(self):
+        PPO_vs_heuristic = PPO_vs_OPPONENT(None, None, None, None, '72+', 'heuristic')
+        PPO_vs_heuristic.init_eval_env()
+        PPO_vs_heuristic.load_params_from_file(self.PPO_path, None)
+        PPO_vs_heuristic.load_metric_dicts_storage()
+        PPO_vs_heuristic.evaluate(self.eval_steps)
+        PPO_vs_heuristic.get_results(True)
+        self.rewards['PPO_vs_heuristic'] = PPO_vs_heuristic.mean_reward
 
-    def PPO_vs_default(self):
-        PPO_vs_default = PPO_vs_OPPONENT(None, None, None, None, '72+', 'PPO')
-        PPO_vs_default.init_eval_env()
-        PPO_vs_default.eval_env.OPPONENT.model = PPO('MultiInputPolicy', PPO_vs_default.eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [64], 'vf': [64]})
-        PPO_vs_default.load_params_from_file(self.PPO_path, r'S:\MSC_proj\models\PPO72+10defaultTrue_10')
-        PPO_vs_default.load_metric_dicts_storage()
-        PPO_vs_default.evaluate(self.eval_steps)
-        PPO_vs_default.get_results(True)
-        self.rewards['PPO_vs_PPO_Default'] = PPO_vs_default.mean_reward
-
-
-    
     def bar_chart(self):
         categories = list(self.rewards.keys())
         counts = list(self.rewards.values())
-        colors = ['darkblue','mediumblue' 'blue']
+        colors = ['darkblue','mediumblue', 'blue', 'lightblue']
         plt.bar(categories, counts, color = colors)
-        plt.xlabel('PPO mean reward')
-        plt.ylabel('Opponents')
-        plt.title('PPO mean reward vs opponent for' + str(self.eval_steps) + 'games')
+        plt.xlabel('Opponents')
+        plt.ylabel('PPO mean reward')
+        plt.title('PPO mean reward vs opponent for ' + str(self.eval_steps) + ' games')
 
         # Display the chart
         plt.xticks(rotation=45) 
@@ -1442,13 +1460,14 @@ class PPO_vs_allops():
 
     def run(self):
         # self.PPO_vs_random()
-        self.PPO_vs_a2c()
+        # self.PPO_vs_a2c()
         # self.PPO_vs_human()
         # self.PPO_vs_default()
-        # self.bar_chart()
+        self.PPO_vs_heuristic()
+        self.bar_chart()
 
-# allops = PPO_vs_allops(1000)      
-# allops.run()
+# allops = PPO_vs_allops(10)      
+# allops.run()                                                                                                                                                                                    
 
 
 class train_convergence_search():
@@ -1556,8 +1575,7 @@ class train_convergence_search():
         
         # Show the plot
         plt.show()
-
-                            
+                          
 class kl_div_test():
     def __init__(self, obs_type, n_gens):
         self.obs_type = obs_type
@@ -1635,18 +1653,12 @@ class NE_tool():
         for i in range(2, len(self.keys)):
             print(i)
             mi = self.models[self.keys[i]]
-            mi_minus_one = self.models[self.keys[i-1]]
-            mi_minus_two = self.models[self.keys[i-2]]
+            mi_p1 = self.models[self.keys[i-1]]
+            mi_p2 = self.models[self.keys[i-2]]
 
-            if i == 2:
-                eq_reward_mi = self.evaluate(mi_minus_one, mi_minus_two)
-            else:
-                eq_reward_mi = store
-  
-            br_payoff_mi= self.evaluate(mi, mi_minus_one)
-            store = br_payoff_mi
-
-            regret_mi = br_payoff_mi - eq_reward_mi
+            eq_reward_mi = self.evaluate(mi_p1, mi_p2)
+            br_payoff_mi = self.evaluate(mi, mi_p1)
+            regret_mi = br_payoff_mi- eq_reward_mi
 
             self.eq_rew[self.keys[i]] = eq_reward_mi
             self.br_rew[self.keys[i]] = br_payoff_mi
@@ -1683,30 +1695,15 @@ class NE_tool():
         print(self.br_rew)
         print(self.regrets)
 
+
     def print_graph(self):
         x_values = list(self.regrets.keys())
         y_values = list(self.regrets.values())
-        self.moving_total = []
-        self.moving_mean = []
-        for y in range(len(y_values)):
-            if len(self.moving_total) == 0:
-                self.moving_total.append(y_values[y])
-            else:
-                self.moving_total.append(self.moving_total[y-1] + y_values[y])
 
-        for y in range(len(y_values)):
-            if len(self.moving_mean) == 0:
-                self.moving_mean.append(y_values[y])
-            else:
-                mean = np.mean(y_values[:y])
-                self.moving_mean.append(mean)    
-
-        # Create a line plot 
-        plt.figure(figsize=(10, 6)) 
-        plt.plot(x_values, y_values, linestyle='-', label = 'regret', color = 'red')
-        plt.plot(x_values, self.moving_mean, linestyle='-.', label = 'moving mean regret', color = 'green')
+        # Create a line plot
+        plt.figure(figsize=(10, 6))  # Optional: set the figure size
+        plt.plot(x_values, y_values, marker='o', linestyle='-')
         plt.title('regret across the selfplay process')
-        plt.legend(fontsize='small')
         plt.xlabel('selfplay model' )
         plt.ylabel('regret')
         plt.grid(True)
@@ -1715,6 +1712,6 @@ class NE_tool():
         plt.tight_layout()  # Optional: improves plot layout
         plt.show()
 
-NET = NE_tool('72+', 10)
-NET.run()
-NET.print_graph()
+# NET = NE_tool('72+', 10)
+# NET.run()
+# NET.print_graph()

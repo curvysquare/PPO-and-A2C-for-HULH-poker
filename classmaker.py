@@ -37,12 +37,14 @@ class graph_metrics():
         
         self.train_moving_mean = {}
         self.train_moving_total = {}
-        self.train_losses = {}
+        # self.train_losses = {}
         self.train_rewards = {}
         
         self.train_rand_op_moving_mean = {}
         self.train_rand_op_moving_total = {}
-        self.train_rand_op_losses = {}
+        self.train_value_losses = [[], []]
+        self.train_policy_losses = [[], []]
+        self.train_entropy_losses = [[], []]
         self.train_rand_op_rewards = {}
         
         self.eval_moving_mean = {}
@@ -56,7 +58,9 @@ class graph_metrics():
          # combined plot
         self.comb_train_moving_mean = [[], []]
         self.comb_train_moving_total = [[], [0.0]]
-        self.comb_train_losses = [[], []]
+        self.comb_train_value_losses = [[], []]
+        self.comb_train_policy_losses = [[], []]
+        self.comb_train_entropy_losses = [[], []]
         self.comb_train_rewards = [[], []]
         
         self.comb_train_rand_op_moving_mean = [[], []]
@@ -127,13 +131,13 @@ class graph_metrics():
         for key in self.storage_ids:
             self.train_moving_mean[key] = ([i for i in range(1, len(self.storage.gen_train_moving_mean_reward[key])+1)], self.storage.gen_train_moving_mean_reward[key])
             self.train_moving_total[key] = ([i for i in range(1, len(self.storage.gen_train_moving_total[key])+1)], self.storage.gen_train_moving_total[key])
-            self.train_losses[key] = ([i for i in range(1, len(self.storage.gen_train_losses[key])+1)], self.storage.gen_train_losses[key]) 
+            # self.train_losses[key] = ([i for i in range(1, len(self.storage.gen_train_losses[key])+1)], self.storage.gen_train_losses[key]) 
             self.train_rewards[key] = ([i for i in range(1, len(self.storage.gen_train_rewards[key])+1)], self.storage.gen_train_rewards[key])
             
             if self.storageB is not None:
                 self.train_rand_op_moving_mean[key]= ([i for i in range(1, len(self.storageB.gen_train_moving_mean_reward[key])+1)], self.storageB.gen_train_moving_mean_reward[key])
                 self.train_rand_op_moving_total[key]= ([i for i in range(1, len(self.storageB.gen_train_moving_total[key])+1)], self.storageB.gen_train_moving_total[key])
-                self.train_rand_op_losses[key]= ([i for i in range(1, len(self.storageB.gen_train_losses[key])+1)], self.storageB.gen_train_losses[key])
+                # self.train_rand_op_losses[key]= ([i for i in range(1, len(self.storageB.gen_train_losses[key])+1)], self.storageB.gen_train_losses[key])
                 self.train_rand_op_rewards[key]= ([i for i in range(1, len(self.storageB.gen_train_rewards[key])+1)], self.storageB.gen_train_rewards[key])
             
             self.eval_moving_mean[key] = ([i for i in range(1, len(self.storage.gen_eval_moving_mean_reward[key])+1)], self.storage.gen_eval_moving_mean_reward[key])
@@ -148,12 +152,16 @@ class graph_metrics():
             
             self.comb_train_rewards[1].extend(self.train_rewards[key][1])
             self.comb_eval_rewards[1].extend(self.eval_rewards[key][1])
-            self.comb_train_losses[1].extend(self.train_losses[key][1])
+
+            if self.storage.gen_train_value_losses[key][0] != None:
+                self.comb_train_value_losses[1].extend(self.storage.gen_train_value_losses[key])
+                self.comb_train_policy_losses[1].extend(self.storage.gen_train_policy_losses[key])
+                self.comb_train_entropy_losses[1].extend(self.storage.gen_train_entropy_losses[key])
             
             if self.storageB is not None:
                 self.comb_train_rand_op_rewards[1].extend(self.train_rand_op_rewards[key][1])
                 self.comb_eval_rand_op_rewards[1].extend(self.eval_rand_op_rewards[key][1])
-                self.comb_train_rand_op_losses[1].extend(self.train_rand_op_losses[key][1])
+                # self.comb_train_rand_op_losses[1].extend(self.train_rand_op_losses[key][1])
           
         if len(self.comb_train_rewards[1]) > 1 and self.comb_train_rewards[1][1]!= None:    
             for i in range(0, len(self.comb_train_rewards[1])):
@@ -197,7 +205,6 @@ class graph_metrics():
             
         self.comb_train_moving_mean[0] = [i for i in range(1, len(self.comb_train_moving_mean[1])+1)]    
         self.comb_train_moving_total[0]= [i for i in range(1, len(self.comb_train_moving_total[1])+1)]
-        self.comb_train_losses[0] = [i for i in range(1, len(self.comb_train_losses[1])+1)]
         self.comb_train_rewards[0] = [i for i in range(1, len(self.comb_train_rewards[1])+1)]
         
         self.comb_train_rand_op_moving_mean[0] = [i for i in range(1, len(self.comb_train_rand_op_moving_mean[1])+1)]    
@@ -214,6 +221,10 @@ class graph_metrics():
         self.comb_eval_rand_op_moving_total[0]= [i for i in range(1, len(self.comb_eval_rand_op_moving_total[1])+1)]
         self.comb_eval_rand_op_rewards[0]= [i for i in range(1, len(self.comb_eval_rand_op_rewards[1])+1)]
         
+        self.comb_train_value_losses[0] = [i for i in range(1, len(self.comb_train_value_losses[1])+1)]
+        self.comb_train_policy_losses[0] = [i for i in range(1, len(self.comb_train_policy_losses[1])+1)]
+        self.comb_train_entropy_losses[0] = [i for i in range(1, len(self.comb_train_entropy_losses[1])+1)]
+
         
          
     def plot_rewards(self, train, eval):
@@ -398,16 +409,29 @@ class graph_metrics():
                 
     
     def plot_loss(self):
-        file_path = os.path.join(self.direct, 'loss.png')
-        fig5, axs5 = plt.subplots(self.num_graphs, 1, sharey='col', figsize = self.figsize)
-        for i, key in enumerate(self.storage_ids):
-            axs5[i].plot(self.train_losses[key][0], self.train_losses[key][1], label='training loss')
-            axs5[i].set_title(str(key) + 'loss')
+        pass
+        # file_path = os.path.join(self.direct, 'loss.png')
+        # fig5, axs5 = plt.subplots(self.num_graphs, 1, sharey='col', figsize = self.figsize)
+        # for i, key in enumerate(self.storage_ids):
+        #     axs5[i].plot(self.train_losses[key][0], self.train_losses[key][1], label='training loss')
+        #     axs5[i].set_title(str(key) + 'loss')
             
+        # plt.tight_layout()
+        # fig5.savefig(file_path)  
+        # plt.show()
+
+    def comb_plot_loss(self):
+        file_path = os.path.join(self.direct, 'comb_loss.png')
+        fig5, axs5 = plt.subplots(1, 1, sharey='col', figsize = self.figsize)
+        axs5.plot(self.comb_train_value_losses[0], self.comb_train_value_losses[1], label='value loss', color = 'red')
+        axs5.plot(self.comb_train_policy_losses[0], self.comb_train_policy_losses[1], label='policy loss', color = 'green')
+        axs5.plot(self.comb_train_entropy_losses[0], self.comb_train_entropy_losses[1], label='entropy loss', color = 'blue')
+        axs5.set_title(' training loss')
+        axs5.legend(fontsize='small')    
         plt.tight_layout()
         fig5.savefig(file_path)  
         plt.show()
-    
+
     def comb_plot_rewards(self, train, eval):
         file_path = os.path.join(self.direct, 'sing_comb_rewards.png')
         fig2, axs2 = plt.subplots(2, 1,figsize = self.figsize) 
@@ -585,7 +609,7 @@ class graph_metrics():
             self.plot_rewards(train, eval)
             self.plot_moving_rewards(train, eval)
             self.plot_moving_mean(train, eval, trim)
-            self.plot_loss()
+            # self.plot_loss()
             if comb:
                 self.comb_plot_rewards(train, eval)
                 self.comb_plot_moving_total(train, eval)
@@ -594,6 +618,8 @@ class graph_metrics():
                 self.plot_sims()
             # comb plot opt acts doesnt have to be in comb group abo
             self.comb_plot_opt_acts(sing_opt_acts)
+            self.comb_plot_loss()
+
     def print_select_graphs(self, rewards, movrews,movmean, loss, combs, sim, opts):
             self.create_x_y()
             if rewards:
@@ -634,7 +660,9 @@ class metric_dicts():
         self.gen_train_moving_total = {}
         self.gen_train_moving_mean_reward= {}
         self.gen_train_final_mean_reward= {}
-        self.gen_train_losses= {}
+        self.gen_train_value_losses= {}
+        self.gen_train_policy_losses= {}
+        self.gen_train_entropy_losses= {}
         
         # self.gen_train_rand_op_rewards = {}
         # self.gen_train_rand_op_moving_total = {}
@@ -684,7 +712,9 @@ class metric_dicts():
             self.gen_train_moving_total[key] = [None]
             self.gen_train_moving_mean_reward[key]= [None]
             self.gen_train_final_mean_reward[key]= [None]
-            self.gen_train_losses[key]= [None]
+            self.gen_train_value_losses[key]= [None]
+            self.gen_train_policy_losses[key]= [None]
+            self.gen_train_entropy_losses[key]= [None]
             
             # self.gen_train_rand_op_rewards[key] = [None]
             # self.gen_train_rand_op_moving_total[key] = [None]
@@ -708,8 +738,10 @@ class metric_dicts():
         self.gen_train_rewards[gen] = callback_train.rewards
         self.gen_train_moving_total[gen] = callback_train.moving_total
         self.gen_train_final_mean_reward[gen] = self.gen_train_moving_mean_reward[gen][-1]
-        self.gen_train_losses[gen] = callback_train.losses
-        
+        self.gen_train_value_losses[gen] = callback_train.value_losses
+        self.gen_train_entropy_losses[gen] = callback_train.entropy_losses
+        self.gen_train_policy_losses[gen] = callback_train.policy_losses
+
         # self.gen_train_rand_op_rewards[gen] = callback_train.op_rewards
         # self.gen_train_rand_op_moving_total[gen] = callback_train.op_moving_total
         # self.gen_train_rand_op_moving_mean_reward[gen] = callback_train.op_moving_mean_reward
