@@ -118,7 +118,7 @@ class LimitHoldemPlayer:
         
         return mask
  
-    def get_action(self, player_obs):
+    def get_action(self, player_obs, game):
         # print("player obs", player_obs)    
 
         if self.policy == 'random':
@@ -137,8 +137,6 @@ class LimitHoldemPlayer:
             action = action[0]
             # self.model.policy.forward(player_obs)  
             
-        
-    
         if self.policy == 'PPO':
             if type(player_obs) == tuple:
                 # print("obstypelist")
@@ -177,12 +175,65 @@ class LimitHoldemPlayer:
                 
             action = action    
             
-            
-        # self.optimal_action(action)   
-        # print(self.opt_acts) 
+        if self.policy == 'heuristic':
+           action = self.optimal_action(player_obs, game)
+
         return action 
                           
-                          
+    def optimal_action(self, player_obs, game):
+        
+        score_max = 7462
+        quartiles = [score_max * 0.25, score_max * 0.5, score_max * 0.75]
+        
+        
+        
+        hand = []
+        for c in self.hand:
+            c1r = c.rank
+            c1s = c.suit.lower()
+            c1 = c1r +  c1s
+            hand.append(c1)
+  
+        pc = []
+        if len(game.public_cards) > 0:
+            public_cards = game.public_cards
+                     
+            for c in public_cards:
+                cr_temp = c.rank
+                cs_temp = c.suit.lower()
+                pc.append(cr_temp +  cs_temp)
+                
+        hand_objs = []
+        pc_objs = [] 
+        for c in hand:
+            hand_objs.append(Card.new(c))   
+        for c in pc:
+            pc_objs.append(Card.new(c))       
+        
+        if len(pc) >= 3:
+            evaluator = Evaluator()
+            try: 
+                score = evaluator.evaluate(hand_objs, pc_objs)
+            except:
+                KeyError
+                score = 0
+            
+            if score <= quartiles[0]:
+                op_act = 1
+            if score >= quartiles[0] and score <= quartiles[1]:
+                op_act = 0
+            if score >= quartiles[1] and score <= quartiles[2]:
+                op_act = 3
+            if score >= quartiles[2]:
+                op_act = 2  
+        else:            
+            mask1 = player_obs['action_mask']
+            action = self.env.action_space(self.player_id).sample(mask1)
+            op_act = action 
+            
+        return op_act
+
+
         # return action 
     # def init_policy_model(self, env):
     #     if self.policy == 'DQN':
