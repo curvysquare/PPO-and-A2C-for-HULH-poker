@@ -45,6 +45,9 @@ class LimitholdemEnv(Env):
             
         if self.obs_shape == '72' and self.obs_type == '72+':
             self.state_shape = [[72] for _ in range(self.num_players)]
+        
+        if self.obs_shape == '72' and self.obs_type == 'PIG':
+            self.state_shape = [[72] for _ in range(self.num_players)]    
              
     def set_chips_type(self, chips_type):
         self.chips_type = chips_type         
@@ -121,7 +124,27 @@ class LimitholdemEnv(Env):
             extracted_state['raw_obs'] = state
             extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
             extracted_state['action_record'] = self.action_recorder    
+        
+        if self.obs_shape[0] == '72' and self.obs_type == 'PIG':
+            hand_idx = [self.card2index[card] for card in hand]
+            public_cards_idx = [self.card2index[card] for card in public_cards]
             
+            op_state = self.game.get_state(player= 0)
+            op_cards = op_state['hand']
+            op_card_idx = [self.card2index[card] for card in op_cards ]
+            
+            obs = np.zeros(72)
+            obs[public_cards_idx] = 1
+            obs[hand_idx] = 2
+            obs[op_card_idx] =3 
+            
+            for i, num in enumerate(raise_nums):
+                obs[50 + i * 5 + num] = 1
+            extracted_state['obs'] = obs
+
+            extracted_state['raw_obs'] = state
+            extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
+            extracted_state['action_record'] = self.action_recorder       
             
 
 

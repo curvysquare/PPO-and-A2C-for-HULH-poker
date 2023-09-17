@@ -5,7 +5,7 @@ from rlcard.utils.utils import print_card as prnt_cd
 import texas_holdem_mod as texas_holdem
 import rlcard 
 from rlcard.utils.utils import print_card as prnt_cd
-from stable_baselines3.common.env_checker import check_env
+from env_checker_mod import check_env
 from evaluation_mod import evaluate_policy
 from callbacks_mod import EvalCallback
 from callbacks_mod import StopTrainingOnNoModelImprovement

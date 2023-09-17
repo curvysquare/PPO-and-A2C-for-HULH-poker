@@ -198,7 +198,10 @@ class raw_env(RLCardBase):
             self.obs_shape = '124'
             self.obs_type = obs_type  
             
-            
+        if obs_type == 'PIG':
+            self.obs_shape = '72'
+            self.obs_type = obs_type  
+                
         super().__init__("limit-holdem_mod", num_players, (self.obs_shape,), self.obs_type)
         self.render_mode = render_mode
 

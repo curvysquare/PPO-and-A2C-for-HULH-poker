@@ -1033,7 +1033,7 @@ def simp_DQN():
     # env.AGENT.model.learn(total_timesteps=20, progress_bar=True)
     
 def simp_PPO(learning_steps, n_eval_episodes):
-    env = texas_holdem.env('72+', render_mode='rgb_array')
+    env = texas_holdem.env('PIG', render_mode='rgb_array')
     # env = Monitor(env, filename='/Users/rhyscooper/Desktop/MScProject/Pages/logs/starbs')
     env.OPPONENT.policy = 'random'
     env.AGENT.policy = 'PPO'
@@ -1063,7 +1063,7 @@ def simp_PPO(learning_steps, n_eval_episodes):
     
     
     # evaluate agent 
-    eval_env = texas_holdem.env('72+', render_mode='rgb_array')
+    eval_env = texas_holdem.env('PIG', render_mode='rgb_array')
     eval_env = Monitor(eval_env)
     eval_env.AGENT.policy = 'PPO'
     eval_env.OPPONENT.policy = 'random'
@@ -1096,7 +1096,7 @@ def simp_PPO(learning_steps, n_eval_episodes):
     gm = graph_metrics(n_models = 2, storage = storageA, storageB = storageB, figsize= (10, 8), t_steps = learning_steps, overlay = False, e_steps=n_eval_episodes )
     gm.print_all_graphs(True, True, False, False, True)
     
-# simp_PPO(30000,1000)   
+simp_PPO(2048,2048)   
 
 def simp_PPO2():
     env = texas_holdem.env()
@@ -1464,8 +1464,8 @@ class PPO_vs_allops():
         self.PPO_vs_heuristic()
         self.bar_chart()
 
-allops = PPO_vs_allops(10000)      
-allops.run()                                                                                                                                                                                    
+# allops = PPO_vs_allops(10000)      
+# allops.run()                                                                                                                                                                                    
 
 
 class train_convergence_search():
