@@ -136,7 +136,7 @@ class LimitholdemEnv(Env):
             obs = np.zeros(72)
             obs[public_cards_idx] = 1
             obs[hand_idx] = 2
-            obs[op_card_idx] =3 
+            obs[op_card_idx] =3
             
             for i, num in enumerate(raise_nums):
                 obs[50 + i * 5 + num] = 1
