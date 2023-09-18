@@ -647,7 +647,7 @@ class hyperparam_search(BatchMultiplier):
 # callback1 = StopTrainingOnNoModelImprovement(max_no_improvement_evals=45, min_evals=35)
 
 def sp_group():
-    sp = self_play(10, 30720, 10000, '72+', 6002, 'PPO', na_key = None, default_params=True, info ='loss')
+    sp = self_play(10, 30720, 3072, '72+', 6007, 'PPO', na_key = None, default_params=False, info ='loss2')
     # sp = self_play(7,100,100, '72+', 124, 'PPO', na_key = None)
     sp.run(False)
     sp.get_results(graphs = True)

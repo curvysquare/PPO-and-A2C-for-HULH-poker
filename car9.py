@@ -645,7 +645,7 @@ class hyperparam_search(BatchMultiplier):
 # callback1 = StopTrainingOnNoModelImprovement(max_no_improvement_evals=45, min_evals=35)
 
 def sp_group():
-    sp = self_play(10, 30720, 10000, '72+', 6002, 'PPO', na_key = None, default_params=True, info ='loss')
+    sp = self_play(10, 30720, 1000, 'PIG', 6003, 'PPO', na_key = None, default_params=False, info ='PIG2')
     # sp = self_play(7,100,100, '72+', 124, 'PPO', na_key = None)
     sp.run(False)
     sp.get_results(graphs = True)
@@ -658,7 +658,7 @@ def sp_group():
 #211 : ppo. default
 # 310 is above without sims
 #220: a2d default
-# sp_group() 
+sp_group() 
 
 def hs_group():        
     hypsrch = hyperparam_search(callback= None, verbose=True, batch_size=[32, 64, 128, 256, 512, 1024], model_type= 'A2C', override_best=True, obs_type= '72+')
@@ -1063,7 +1063,7 @@ def simp_PPO(learning_steps, n_eval_episodes):
     
     
     # evaluate agent 
-    eval_env = texas_holdem.env('PIG', render_mode='rgb_array')
+    eval_env = texas_holdem.env('72+', render_mode='rgb_array')
     eval_env = Monitor(eval_env)
     eval_env.AGENT.policy = 'PPO'
     eval_env.OPPONENT.policy = 'random'
@@ -1096,7 +1096,7 @@ def simp_PPO(learning_steps, n_eval_episodes):
     gm = graph_metrics(n_models = 2, storage = storageA, storageB = storageB, figsize= (10, 8), t_steps = learning_steps, overlay = False, e_steps=n_eval_episodes )
     gm.print_all_graphs(True, True, False, False, True)
     
-simp_PPO(2048,2048)   
+# simp_PPO(2048,2048)   
 
 def simp_PPO2():
     env = texas_holdem.env()

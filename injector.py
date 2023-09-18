@@ -40,7 +40,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from scipy.special import kl_div
 
-# env = texas_holdem.env('72+', render_mode = "rgb_array")
+# env = texas_holdem.env('PIG', render_mode = "rgb_array")
 # env.AGENT.policy = 'PPO'
 # env.OPPONENT.policy = 'PPO'
 # env.OPPONENT.model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [256], 'vf': [256]},learning_rate=  0.07100101556878591, n_steps = 100, batch_size = 50, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
@@ -177,49 +177,67 @@ class card_injector():
                 obs = np.zeros(72)
                 obs[public_cards_idx] = 1
                 obs[hand_idx] = 1
+
+            if self.env.obs_type == 'PIG':
+                hand_idx = [self.card2index[card.get_index()] for card in tupe[0]]
+                public_cards_idx = [self.card2index[card.get_index()] for card in tupe[1]]
+                op_state = self.env.game.get_state(player= 0)
+                op_cards = op_state['hand']
+                op_card_idx = [self.card2index[card] for card in op_cards ]
+                obs = np.zeros(124)
+                obs[public_cards_idx] = 1
+                obs[hand_idx] = 2
+                obs[:52][op_card_idx] =3
                     
-                
+            if self.env.obs_type != 'PIG':
+                raise_nums_start_index = 50
+            if self.env.obs_type == 'PIG':
+                raise_nums_start_index = 100
+
             if key == 'HC':  
                 raise_nums = [1,1,1]
                 for i, num in enumerate(raise_nums):
-                    obs[50 + i * 5 + num] = 1
+                    obs[raise_nums_start_index  + i * 5 + num] = 1
                 extracted_state['observation'] = obs
                 extracted_state['action_mask'] = [1,0,1,1]
                 
             if key == 'STR':  
                 raise_nums = [2,3,4]
                 for i, num in enumerate(raise_nums):
-                    obs[50 + i * 5 + num] = 1
+                    obs[raise_nums_start_index  + i * 5 + num] = 1
                 extracted_state['observation'] = obs
                 extracted_state['action_mask'] = [1,0,1,1]
                 
             if key == 'RF':  
                 raise_nums = [2,4,5]
                 for i, num in enumerate(raise_nums):
-                    obs[50 + i * 5 + num] = 1
+                    obs[raise_nums_start_index  + i * 5 + num] = 1
                 extracted_state['observation'] = obs     
                 extracted_state['action_mask'] = [1,0,1,1]
 
             if key == 'STR_FLSH':  
                 raise_nums = [2,4,5]
                 for i, num in enumerate(raise_nums):
-                    obs[50 + i * 5 + num] = 1
+                    obs[raise_nums_start_index  + i * 5 + num] = 1
                 extracted_state['observation'] = obs     
                 extracted_state['action_mask'] = [1,0,1,1]    
 
             if key == 'FLSH':  
                 raise_nums = [2,3,4]
                 for i, num in enumerate(raise_nums):
-                    obs[50 + i * 5 + num] = 1
+                    obs[raise_nums_start_index  + i * 5 + num] = 1
                 extracted_state['observation'] = obs     
                 extracted_state['action_mask'] = [1,0,1,1]
 
             if key == 'PR':  
                 raise_nums = [1,2,1]
                 for i, num in enumerate(raise_nums):
-                    obs[50 + i * 5 + num] = 1
+                    obs[raise_nums_start_index  + i * 5 + num] = 1
                 extracted_state['observation'] = obs     
-                extracted_state['action_mask'] = [1,0,1,1]        
+                extracted_state['action_mask'] = [1,0,1,1] 
+
+          
+
                         
             
             extracted_state['observation'] = np.array(extracted_state['observation'], dtype = np.float32)
@@ -302,7 +320,4 @@ class card_injector():
 
     
 # ci = card_injector(env.AGENT, env.OPPONENT, env)
-# ci.premaker('high_card')
-# print(ci.create_obs()) 
-# sim = ci.get_probs_similarity()
-# print(sim)S
+# print(ci.return_results())

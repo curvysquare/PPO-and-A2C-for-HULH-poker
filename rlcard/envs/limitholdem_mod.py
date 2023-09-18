@@ -37,17 +37,17 @@ class LimitholdemEnv(Env):
     def set_state_shape(self, obs_shape, obs_type):
         self.obs_shape = obs_shape 
         self.obs_type = obs_type       
-        if self.obs_shape == '124' and self.obs_type == '124':
+        if self.obs_shape[0] == '124' and self.obs_type == '124':
             self.state_shape = [[124] for _ in range(self.num_players)]
         
-        if self.obs_shape == '72' and self.obs_type == '72':
+        if self.obs_shape[0] == '72' and self.obs_type == '72':
             self.state_shape = [[72] for _ in range(self.num_players)]
             
-        if self.obs_shape == '72' and self.obs_type == '72+':
+        if self.obs_shape[0] == '72' and self.obs_type == '72+':
             self.state_shape = [[72] for _ in range(self.num_players)]
         
-        if self.obs_shape == '72' and self.obs_type == 'PIG':
-            self.state_shape = [[72] for _ in range(self.num_players)]    
+        if self.obs_shape[0] == '124' and self.obs_type == 'PIG':
+            self.state_shape = [[124] for _ in range(self.num_players)]    
              
     def set_chips_type(self, chips_type):
         self.chips_type = chips_type         
@@ -90,7 +90,7 @@ class LimitholdemEnv(Env):
             obs = np.zeros(124)
             obs[idx] = 1
             for i, num in enumerate(raise_nums):
-                obs[104 + i * 5 + num] = 1
+                obs[100 + i * 5 + num] = 1
             extracted_state['obs'] = obs
 
             extracted_state['raw_obs'] = state
@@ -125,7 +125,7 @@ class LimitholdemEnv(Env):
             extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
             extracted_state['action_record'] = self.action_recorder    
         
-        if self.obs_shape[0] == '72' and self.obs_type == 'PIG':
+        if self.obs_shape[0] == '124' and self.obs_type == 'PIG':
             hand_idx = [self.card2index[card] for card in hand]
             public_cards_idx = [self.card2index[card] for card in public_cards]
             
@@ -133,13 +133,13 @@ class LimitholdemEnv(Env):
             op_cards = op_state['hand']
             op_card_idx = [self.card2index[card] for card in op_cards ]
             
-            obs = np.zeros(72)
+            obs = np.zeros(124)
             obs[public_cards_idx] = 1
             obs[hand_idx] = 2
-            obs[op_card_idx] =3
+            obs[:52][op_card_idx] =3
             
             for i, num in enumerate(raise_nums):
-                obs[50 + i * 5 + num] = 1
+                obs[100 + i * 5 + num] = 1
             extracted_state['obs'] = obs
 
             extracted_state['raw_obs'] = state
