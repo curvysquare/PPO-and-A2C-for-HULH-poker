@@ -1,6 +1,4 @@
 from enum import Enum
-# from stable_baselines3 import DQN
-# from stable_baselines3 import A2C
 import numpy as np
 import matplotlib.pyplot as plt
 from rlcard.agents import DQNAgent
@@ -54,9 +52,27 @@ def _print_state(state):
     print(format_legal_actions(state['legal_actions']))
   
 
-
-
 class LimitHoldemPlayer:
+    """
+        Attributes:
+        np_random (np.random.RandomState): The random number generator.
+        player_id (str): The identifier for the player.
+        hand (list): The player's hole cards.
+        status (PlayerStatus): The player's status (ALIVE, FOLDED, etc.).
+        policy (str): The player's policy (e.g., 'random', 'PPO', 'human', 'heuristic').
+        model: The player's machine learning model (if applicable).
+        env: The game environment.
+        rewardz (list): List to store rewards obtained during gameplay.
+        opt_acts (list): List to store optimal actions taken by the player.
+        in_chips (int): The chips that this player has put in the pot so far.
+
+        Methods:
+        get_state: Encode the state for the player
+        get_player_id: Get the id of the player
+        apply_mask: Apply a mask to a list
+        get_action_mask: Get the action mask for the player
+        get_action: Get the action for the player based off its policy attribute
+    """
 
     def __init__(self, player_id, np_random, policy):
         """
@@ -64,9 +80,10 @@ class LimitHoldemPlayer:
 
         Args:
             player_id (int): The id of the player
+            np_random (np.random.RandomState): The random number generator
+            policy (str): The policy of the player
         """
         self.np_random = np_random
-        # self.player_id = player_id
         self.player_id = f"player_{player_id}"
         self.hand = []
         self.status = PlayerStatus.ALIVE
@@ -75,10 +92,6 @@ class LimitHoldemPlayer:
         self.env = None
         self.rewardz = []
         self.opt_acts = []
-        self.opt_actions2 = 0
-        
-            
-
         # The chips that this player has put in until now
         self.in_chips = 0
 
@@ -119,60 +132,36 @@ class LimitHoldemPlayer:
         return mask
  
     def get_action(self, player_obs, game):
-        # print("player obs", player_obs)    
+        """
+        Get the action to be taken by the player based on their policy.
 
+        Args:
+            player_obs (dict or tuple): The observation of the player, containing relevant game information.
+            game: The game environment.
+
+        Returns:
+            action: The selected action according to the player's policy.  
+        """
         if self.policy == 'random':
             mask1 = player_obs['action_mask']
-            # print("opponent action mask", mask1)
             action = self.env.action_space(self.player_id).sample(mask1)
-            
-        if self.policy == 'DQN':
-            print("getting action for",(player_obs))
-            if type(player_obs) == list:
-                player_obs = player_obs[0]
-            # if type(player_obs) == dict:
-            #     player_obs = player_obs['observation']
-            print("player_obs", player_obs,)
-            action = self.model.predict(observation=player_obs)
-            action = action[0]
-            # self.model.policy.forward(player_obs)  
-            
-        if self.policy == 'PPO':
-            if type(player_obs) == tuple:
-                # print("obstypelist")
-                player_obs = player_obs[0]
-                # del player_obs['action_mask']
-                # player_obs = player_obs['observation']
-                pass
-            # if type(player_obs) == dict:
-            #     print("obstypedict")
-            #     player_obs = player_obs['observation']
-            # print("player_obs", player_obs,)
-            action = self.model.predict(observation=player_obs)
-            action = action[0]
-            # self.optimal_action(action)
-            # self.model.policy.forward(player_obs) 
-            
-        if self.policy == 'A2C':
+
+        if self.policy == 'PPO' or self.policy == 'A2C':
             if type(player_obs) == tuple:
                 player_obs = player_obs[0]
                 pass
             action = self.model.predict(observation=player_obs)
             action = action[0]
-            
-                    
+                       
         if self.policy == 'human':
             raw_env = self.env.env.env.env
-            # state = raw_env.get_state('player_0')
-            lhm_env = self.env.env.env.env.env
-            state  = lhm_env.get_state(0)
+            limit_holdem_env = self.env.env.env.env.env
+            state  = limit_holdem_env.get_state(0)
             print(_print_state(state))
-            
             try:
                 action = int(input('>> You choose action (integer): '))
             except ValueError:
                 action = int(input('>> You choose action (integer): '))
-                
             action = action    
             
         if self.policy == 'heuristic':
@@ -181,12 +170,28 @@ class LimitHoldemPlayer:
         return action 
                           
     def optimal_action(self, player_obs, game):
-        
+        """
+
+        Determine the optimal action for the player 
+
+        This method calculates theplayer's optimal action based on their current hand, the public cards in the game, and predefined quartile scores.
+        If there are at least three public cards, it evaluates the hand's strength and selects an action based on quartile score ranges.
+        If there are fewer than three public cards, it selects a random action from the available actions according to the provided action mask.
+
+        Parameters:
+        - player_obs (dict): A dictionary containing observation information for the AI player.
+        - game (Game): The current poker game being played.
+
+        Returns:
+        - op_act (int): The selected optimal action for the AI player. Possible values:
+            - 0: call
+            - 1: raise 
+            - 2: fold
+            - 3: check
+         """
         score_max = 7462
         quartiles = [score_max * 0.25, score_max * 0.5, score_max * 0.75]
-        
-        
-        
+
         hand = []
         for c in self.hand:
             c1r = c.rank
@@ -232,75 +237,7 @@ class LimitHoldemPlayer:
             op_act = action 
             
         return op_act
-
-
-        # return action 
-    # def init_policy_model(self, env):
-    #     if self.policy == 'DQN':
-    #         self.model = DQN("MlpPolicy", env, verbose=1)
-    #         self.model._setup_model()
-    #         params = (self.model.policy)
-    #         # print("params", params)
-    #         # print("shape", (np.shape(params)))
-    #         # self.model = A2C("MlpPolicy", env, device="cpu")
-    # def player_learn(self):
-    #     self.model.learn(total_timesteps=10, log_interval=4)
-        
-    # def player_train(self):
-    #     self.model.train(gradient_steps=100)  
-    
-    # def optimal_action(self, action):
-        
-    #     score_max = 7462
-    #     quartiles = [score_max * 0.25, score_max * 0.5, score_max * 0.75]
-        
-    #     game = self.env.env.env.env.env.game
-        
-    #     hand = []
-    #     for c in self.hand:
-    #         c1r = c.rank
-    #         c1s = c.suit.lower()
-    #         c1 = c1r +  c1s
-    #         hand.append(c1)
   
-    #     pc = []
-    #     if len(game.public_cards) > 0:
-    #         public_cards = game.public_cards
-                     
-    #         for c in public_cards:
-    #             cr_temp = c.rank
-    #             cs_temp = c.suit.lower()
-    #             pc.append(cr_temp +  cs_temp)
-                
-    #     hand_objs = []
-    #     pc_objs = [] 
-    #     for c in hand:
-    #         hand_objs.append(Card.new(c))   
-    #     for c in pc:
-    #         pc_objs.append(Card.new(c))       
-        
-    #     if len(pc) >= 3:
-    #         evaluator = Evaluator()
-    #         try: 
-    #             score = evaluator.evaluate(hand_objs, pc_objs)
-    #         except:
-    #             KeyError
-    #             score = 0
-            
-    #         if score <= quartiles[0]:
-    #             op_act = 3
-    #         if score >= quartiles[0] and score <= quartiles[1]:
-    #             op_act = 4
-    #         if score >= quartiles[1] and score <= quartiles[2]:
-    #             op_act = 0
-    #         if score >= quartiles[2]:
-    #             op_act = 1   
-    #         if action == op_act:
-    #             self.opt_acts.append(1) 
-    #             self.opt_actions2 +=1       
-    #         else:  
-    #             self.opt_acts.append(0)         
-            
                
         
                  

@@ -100,7 +100,6 @@ class BaseAlgorithm(ABC):
     :param supported_action_spaces: The action spaces supported by the algorithm.
     """
 
-    # Policy aliases (see _get_policy_from_name())
     policy_aliases: ClassVar[Dict[str, Type[BasePolicy]]] = {}
     policy: BasePolicy
     observation_space: spaces.Space
@@ -178,7 +177,7 @@ class BaseAlgorithm(ABC):
             env = maybe_make_env(env, self.verbose)
             env = self._wrap_env(env, self.verbose, monitor_wrapper)
 
-            # print("BA", env.observation_space)
+
             self.observation_space = env.observation_space
             self.action_space = env.action_space
             self.n_envs = env.num_envs

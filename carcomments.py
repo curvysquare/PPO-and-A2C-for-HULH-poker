@@ -382,11 +382,11 @@ def sp_group():
     Returns:
     - None
     """
-    sp = self_play(10, 30720, 3072, 'PIG', 6003, 'PPO', na_key=None, default_params=True, info='PIG3')
+    sp = self_play(10, 30720, 3072, 'PIG', 6003, 'PPO', na_key=None, default_params=True, info='PIG71')
     sp.run(False)
     sp.get_results(graphs=True)
 
-sp_group() 
+# sp_group() 
 
 class BatchMultiplier:
     """
@@ -558,7 +558,7 @@ class hyperparam_search(BatchMultiplier):
             Returns:
             - dict: A dictionary containing the suggested hyperparameters for the PPO model.
             """
-        return {
+            return {
         'batch_size': trial.suggest_categorical('batch_size', [32, 64, 128, 256, 512, 1024]),    
         'n_steps': trial.suggest_categorical('n_steps', self.generate_divisible_integers()), 
         'learning_rate': trial.suggest_loguniform('learning_rate',1e-6, 1),
@@ -893,82 +893,82 @@ class micro_hyperparam_search:
         return wrapper
 
     def optimize_agent(self, trial):
-    """
-    Optimize the reinforcement learning agent using the specified model type (PPO or A2C) and hyperparameters.
+        """
+        Optimize the reinforcement learning agent using the specified model type (PPO or A2C) and hyperparameters.
 
-    Args:
-    - trial: An Optuna Trial object for hyperparameter optimization.
+        Args:
+        - trial: An Optuna Trial object for hyperparameter optimization.
 
-    Returns:
-    - float: The mean reward achieved by the optimized agent.
+        Returns:
+        - float: The mean reward achieved by the optimized agent.
 
-    This method initializes an environment and evaluation environment for Texas Hold'em.
-    The agent's policy and model are set based on the chosen model type (PPO or A2C).
-    The agent's model is trained with the specified hyperparameters.
-    The mean reward achieved by the agent is returned as the optimization objective.
+        This method initializes an environment and evaluation environment for Texas Hold'em.
+        The agent's policy and model are set based on the chosen model type (PPO or A2C).
+        The agent's model is trained with the specified hyperparameters.
+        The mean reward achieved by the agent is returned as the optimization objective.
 
-    For PPO:
-    - Uses the PPO algorithm with hyperparameters specified by 'model_params'.
-    - 'model_params' should contain 'optimizer_class', 'activation_fn', 'learning_rate', 'n_steps', 'batch_size', 'n_epochs', 'ent_coef', 'vf_coef', and 'net_arch'.
+        For PPO:
+        - Uses the PPO algorithm with hyperparameters specified by 'model_params'.
+        - 'model_params' should contain 'optimizer_class', 'activation_fn', 'learning_rate', 'n_steps', 'batch_size', 'n_epochs', 'ent_coef', 'vf_coef', and 'net_arch'.
 
-    For A2C:
-    - Uses the A2C algorithm with hyperparameters specified by 'model_params'.
-    - 'model_params' should contain 'optimizer_class', 'activation_fn', 'learning_rate', 'n_steps', 'ent_coef', 'vf_coef', 'use_rms_prop', and 'net_arch'.
+        For A2C:
+        - Uses the A2C algorithm with hyperparameters specified by 'model_params'.
+        - 'model_params' should contain 'optimizer_class', 'activation_fn', 'learning_rate', 'n_steps', 'ent_coef', 'vf_coef', 'use_rms_prop', and 'net_arch'.
 
-    The training process is wrapped in a try-except block to handle exceptions and return a mean reward of 0 if training fails.
-    """
-    callback = self.callback
-    
-    # Initialize parameters depending on the model
-    if self.model_type == 'PPO':
-        model_params = self.optimize_ppo(trial)
-    elif self.model_type == 'A2C':    
-        model_params = self.optimize_A2C(trial) 
-    
-    # Initialize the environment
-    env = texas_holdem.env(self.obs_type, render_mode="rgb_array")
-    
-    # Initialize the evaluation environment
-    Eval_env = texas_holdem.env(self.obs_type, render_mode="rgb_array")
-    
-    # Initialize policies
-    if self.model_type == 'PPO':
-        env.AGENT.policy = 'PPO'
-        env.OPPONENT.policy = 'PPO'
-        Eval_env.AGENT.policy = 'PPO'
+        The training process is wrapped in a try-except block to handle exceptions and return a mean reward of 0 if training fails.
+            """
+        callback = self.callback
+        
+        # Initialize parameters depending on the model
+        if self.model_type == 'PPO':
+            model_params = self.optimize_ppo(trial)
+        elif self.model_type == 'A2C':    
+            model_params = self.optimize_A2C(trial) 
+        
+        # Initialize the environment
+        env = texas_holdem.env(self.obs_type, render_mode="rgb_array")
+        
+        # Initialize the evaluation environment
+        Eval_env = texas_holdem.env(self.obs_type, render_mode="rgb_array")
+        
+        # Initialize policies
+        if self.model_type == 'PPO':
+            env.AGENT.policy = 'PPO'
+            env.OPPONENT.policy = 'PPO'
+            Eval_env.AGENT.policy = 'PPO'
 
-    elif self.model_type == 'A2C':
-        env.AGENT.policy = 'A2C'
-        env.OPPONENT.policy = 'A2C'
-        Eval_env.AGENT.policy = 'A2C'
+        elif self.model_type == 'A2C':
+            env.AGENT.policy = 'A2C'
+            env.OPPONENT.policy = 'A2C'
+            Eval_env.AGENT.policy = 'A2C'
+        
+        if self.model_type == 'PPO':
+            env.AGENT.model = PPO('MultiInputPolicy', env, optimizer_class=th.optim.Adam, 
+                                activation_fn=nn.Tanh, learning_rate=0.005778633008004902, n_steps=3072, 
+                                batch_size=32, n_epochs=70, ent_coef=0.0025, vf_coef=0.25, verbose=0, **model_params)
+            env.OPPONENT.model = PPO('MultiInputPolicy', env, optimizer_class=th.optim.Adam, 
+                                    activation_fn=nn.Tanh, learning_rate=0.005778633008004902, n_steps=3072, 
+                                    batch_size=32, n_epochs=70, ent_coef=0.0025, vf_coef=0.25, verbose=0, **model_params)
+            env.OPPONENT.model.set_parameters(self.na_gen_0_dict[str(model_params['net_arch'])])
+        
+        if self.model_type == 'A2C':
+            env.AGENT.model = A2C('MultiInputPolicy', env, optimizer_class=th.optim.RMSprop, 
+                                activation_fn=nn.ReLU, learning_rate=0.04568216636850521, n_steps=10000, 
+                                ent_coef=0.0025, vf_coef=0.25, use_rms_prop=False, **model_params)
+            env.OPPONENT.model = A2C('MultiInputPolicy', env, optimizer_class=th.optim.RMSprop, 
+                                    activation_fn=nn.ReLU, learning_rate=0.04568216636850521, n_steps=10000, 
+                                    ent_coef=0.0025, vf_coef=0.25, use_rms_prop=False, **model_params)
+            env.OPPONENT.model.set_parameters(self.na_gen_0_dict[str(model_params['net_arch'])])
+        
+        Eval_env = Monitor(Eval_env)
+        Eval_env.OPPONENT.policy = 'random'
     
-    if self.model_type == 'PPO':
-        env.AGENT.model = PPO('MultiInputPolicy', env, optimizer_class=th.optim.Adam, 
-                              activation_fn=nn.Tanh, learning_rate=0.005778633008004902, n_steps=3072, 
-                              batch_size=32, n_epochs=70, ent_coef=0.0025, vf_coef=0.25, verbose=0, **model_params)
-        env.OPPONENT.model = PPO('MultiInputPolicy', env, optimizer_class=th.optim.Adam, 
-                                  activation_fn=nn.Tanh, learning_rate=0.005778633008004902, n_steps=3072, 
-                                  batch_size=32, n_epochs=70, ent_coef=0.0025, vf_coef=0.25, verbose=0, **model_params)
-        env.OPPONENT.model.set_parameters(self.na_gen_0_dict[str(model_params['net_arch'])])
-    
-    if self.model_type == 'A2C':
-        env.AGENT.model = A2C('MultiInputPolicy', env, optimizer_class=th.optim.RMSprop, 
-                              activation_fn=nn.ReLU, learning_rate=0.04568216636850521, n_steps=10000, 
-                              ent_coef=0.0025, vf_coef=0.25, use_rms_prop=False, **model_params)
-        env.OPPONENT.model = A2C('MultiInputPolicy', env, optimizer_class=th.optim.RMSprop, 
-                                  activation_fn=nn.ReLU, learning_rate=0.04568216636850521, n_steps=10000, 
-                                  ent_coef=0.0025, vf_coef=0.25, use_rms_prop=False, **model_params)
-        env.OPPONENT.model.set_parameters(self.na_gen_0_dict[str(model_params['net_arch'])])
-    
-    Eval_env = Monitor(Eval_env)
-    Eval_env.OPPONENT.policy = 'random'
- 
-    try: 
-        env.AGENT.model.learn(total_timesteps=30720, callback=None, progress_bar=False, dumb_mode=False)
-        mean_reward, _ = evaluate_policy(env.AGENT.model, Eval_env, n_eval_episodes=10000)
-    except ValueError:
-        mean_reward = 0.0
-    return mean_reward
+        try: 
+            env.AGENT.model.learn(total_timesteps=30720, callback=None, progress_bar=False, dumb_mode=False)
+            mean_reward, _ = evaluate_policy(env.AGENT.model, Eval_env, n_eval_episodes=10000)
+        except ValueError:
+            mean_reward = 0.0
+        return mean_reward
     
     def run(self, print_graphs):
         self.optimize_agent = self.custom_exception_handler(self.optimize_agent)
@@ -1027,7 +1027,7 @@ class obs_experiment():
         self.na = {'pi': [64], 'vf': [64]}
 
     def train_opponents(self, gen_to_load):
-         """
+        """
         Train opponent agents for each environment and store the trained models.
 
         Args:
@@ -1157,7 +1157,7 @@ def obs_experiment_group():
     experiment.get_results(graphs=True)
 
 class PPO_vs_OPPONENT():
-      """
+    """
     Class to compare a PPO agent against different opponents in a Texas Hold'em environment.
 
     This class allows you to compare the performance of a PPO agent against different types of opponents
@@ -1272,7 +1272,7 @@ class PPO_vs_OPPONENT():
             gm.print_all_graphs(False, True, False,False, True, True)
 
 class PPO_vs_allops():
-     """
+    """
     Class to compare a PPO agent against various opponents and display results.
 
     This class allows you to compare the performance of a PPO agent against different types of opponents
@@ -1359,6 +1359,19 @@ class PPO_vs_allops():
 
 # allops = PPO_vs_allops(10000)      
 # allops.run()                                                                                                                                                                                    
+
+def PIG_vs_random():
+    PPO_path = r'S:\MSC_proj\models\PPOPIG10defaultTruePIG72_10'
+    eval_steps = 10000
+    PIG_vs_random = PPO_vs_OPPONENT('PIG', 'random')
+    PIG_vs_random.init_eval_env()
+    PIG_vs_random.load_params_from_file(PPO_path, None)
+    PIG_vs_random.load_metric_dicts_storage()
+    PIG_vs_random.evaluate(eval_steps)
+    PIG_vs_random.get_results(True)
+    print(PIG_vs_random.mean_reward)
+
+PIG_vs_random()
 
 class train_convergence_search():
     """

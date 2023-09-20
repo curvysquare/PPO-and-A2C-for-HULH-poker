@@ -178,6 +178,29 @@ def get_font(path, size):
 
 
 class raw_env(RLCardBase):
+    """
+    A custom RL environment for Texas Hold'em poker. supports
+    different observation types and rendering modes.
+
+    Args:
+        num_players (int): The number of players in the game.
+        render_mode (str): The rendering mode to use ("human" for human-readable output, "rgb_array" for image-based
+            rendering).
+        obs_type (str): The observation type to use. Choose from '72' (for 72-dimensional observation space),
+            '72+' (also 72-dimensional, but with seperate indexing for players cards), '124' (for 124-dimensional observation space, 52 index positions
+            for players cards, another 52 index positions for community cards),
+            or 'PIG' (for 124-dimensional observation space with a perfect infromation game format that includes opponents cards).
+
+    Attributes:
+        metadata (dict): Metadata describing the environment, including render modes, name, parallelizability, and
+            rendering frames per second.
+        obs_shape (str): The shape of the observation space ('72' or '124') based on the chosen obs_type.
+        obs_type (str): The selected observation type ('72', '72+', '124', or 'PIG').
+        render_mode (str): The rendering mode chosen for this environment ('human' or 'rgb_array').
+
+    Methods:
+        step(action): Perform one step of the environment given an action.
+    """
     metadata = {
         "render_modes": ["human", "rgb_array"],
         "name": "texas_holdem_v4",
@@ -186,28 +209,39 @@ class raw_env(RLCardBase):
     }
 
     def __init__(self, num_players, render_mode, obs_type):
+        # Initialize observation shape and type based on the provided parameters
         if obs_type == '72': 
             self.obs_shape = '72'
             self.obs_type = obs_type
-
-        if obs_type == '72+': 
+        elif obs_type == '72+': 
             self.obs_shape = '72'
             self.obs_type = obs_type
-            
-        if obs_type == '124': 
+        elif obs_type == '124': 
             self.obs_shape = '124'
             self.obs_type = obs_type  
-            
-        if obs_type == 'PIG':
+        elif obs_type == 'PIG':
             self.obs_shape = '124'
             self.obs_type = obs_type  
                 
+        # Initialize the base class with appropriate parameters
         super().__init__("limit-holdem_mod", num_players, (self.obs_shape,), self.obs_type)
+        
+        # Set the rendering mode
         self.render_mode = render_mode
 
     def step(self, action):
+        """
+        Perform one step of the environment.
+
+        Args:
+            action: The action to be taken in the environment.
+
+        Returns:
+            None
+        """
         super().step(action)
 
+        # Render the environment if the render mode is "human"
         if self.render_mode == "human":
             self.render()
 
@@ -455,20 +489,42 @@ class raw_env(RLCardBase):
             else None
         )
 
-
-
-# i guess below is technically a wrapper
-# class meta_env(raw_env):
-#     def __init__(self, num_players, render_mode, learner):
-#         super().__init__(num_players, render_mode)
-#         self.learner = learner
-        
-#     def observe(self):
-#         # return super().observe(self.learner)
-#         print("observe inherited")
-#         return super().last(self.learner)        
    
 class meta_wrapper(BaseWrapper):
+    """
+    A wrapper class for the environment that converts the multiagent environment into a single-player environment.
+
+    This wrapper extends the functionality of a base RL environment by providing additional features related to
+    observations, actions, and meta-information for two players in a game.
+    
+     It also calculates and tracks optimal actions
+    based on hand evaluation scores.
+
+    Args:
+        env: The base RL environment to be wrapped.
+        learner: The player for which the reinforcement learning agent is acting.
+        obs_type (str): The observation type to use.
+
+    Attributes:
+        learner: The player for which the reinforcement learning agent is acting.
+        baked (str): The player ID for the opponent
+        players: The list of players in the game.
+        game: The game object representing the environment's game.
+        game_pointer_pu: The game pointer for public updates.
+        obs_type (str): The selected observation type.
+        AGENT: The learner's player object.
+        OPPONENT: The opponent player object.
+        observation_space: The observation space.
+        action_space: The action space.
+        opt_acts_ag (list): List to store optimal actions taken by the agent.
+        opt_acts_op (list): List to store optimal actions taken by the opponent.
+
+    Methods:
+        observe(): Observe the current state of the environment.
+        optimal_action(action, player): Calculate and track optimal actions based on hand evaluation scores.
+        step(action): Perform one step in the environment, including optimal action calculation.
+        reset(seed=None): Reset the environment and return the initial observation and info.
+    """
     def __init__(self, env, learner, obs_type):
         super().__init__(env)
         self.learner = learner
@@ -477,7 +533,6 @@ class meta_wrapper(BaseWrapper):
         self.game = env.env.env.env.env.game
         self.game_pointer_pu = env.env.env.env.env.game.game_pointer
         self.obs_type = obs_type
-        # print("gppu", self.game_pointer_pu)
         
         self.AGENT = self.players[0]
         self.OPPONENT = self.players[1]
@@ -488,53 +543,64 @@ class meta_wrapper(BaseWrapper):
         self.opt_acts_op = []
 
     def observe(self):
-        
-        # return super().observe(self.learner) 
-        return [super().observe(self.learner), self._cumulative_rewards[self.learner], self.terminations[self.learner], self.truncations[self.learner], self.infos[self.learner]]
+        """
+        Observe the current state of the environment.
 
+        Returns:
+            list: A list containing observations, cumulative rewards, terminations, truncations, and information.
+        """
+        return [super().observe(self.learner), self._cumulative_rewards[self.learner],
+                self.terminations[self.learner], self.truncations[self.learner], self.infos[self.learner]]
 
-    # def op_observe(self):
-    #     return [super().observe(self.baked), self._cumulative_rewards[self.baked], self.terminations[self.baked], self.truncations[self.baked], self.infos[self.baked]]
-        
-        
     def optimal_action(self, action, player):
-        
+        """
+        Calculate and track optimal actions based on hand evaluation scores.
+
+        Args:
+            action: The action taken by the player.
+            player: The player for whom the optimal action is calculated.
+
+        Returns:
+            None
+        """
         score_max = 7462
         quartiles = [score_max * 0.25, score_max * 0.5, score_max * 0.75]
-        
         game = self.game
-        
+
+        # format cards in players hand
         hand = []
         for c in player.hand:
             c1r = c.rank
             c1s = c.suit.lower()
-            c1 = c1r +  c1s
+            c1 = c1r + c1s
             hand.append(c1)
-  
+        # format cards in community cards
         pc = []
         if len(game.public_cards) > 0:
             public_cards = game.public_cards
-                     
+
             for c in public_cards:
                 cr_temp = c.rank
                 cs_temp = c.suit.lower()
-                pc.append(cr_temp +  cs_temp)
-                
+                pc.append(cr_temp + cs_temp)
+
         hand_objs = []
-        pc_objs = [] 
+        pc_objs = []
         for c in hand:
-            hand_objs.append(Card.new(c))   
+            hand_objs.append(Card.new(c))
         for c in pc:
-            pc_objs.append(Card.new(c))       
-        
+            pc_objs.append(Card.new(c))
+
+        # if more than three cards in the hand (afer pre-flop round), deterime optimal action. If its the same as the action
+        # taken by the agent or oppoent, append the op_acts list with a 1 to record this, or append with a zero if optimal action 
+        # was not chosen. 
         if len(pc) >= 3:
             evaluator = Evaluator()
-            try: 
+            try:
                 score = evaluator.evaluate(hand_objs, pc_objs)
-            except:
-                KeyError
+            except KeyError:
                 score = 0
-            
+
             if score <= quartiles[0]:
                 op_act = 1
             if score >= quartiles[0] and score <= quartiles[1]:
@@ -542,78 +608,82 @@ class meta_wrapper(BaseWrapper):
             if score >= quartiles[1] and score <= quartiles[2]:
                 op_act = 3
             if score >= quartiles[2]:
-                op_act = 2  
+                op_act = 2
             if action == op_act:
-                if player.player_id== 'player_1':
+                if player.player_id == 'player_1':
                     self.opt_acts_ag.append(1)
-                if player.player_id == 'player_0':  
-                    self.opt_acts_op.append(1)      
+                if player.player_id == 'player_0':
+                    self.opt_acts_op.append(1)
             else:
                 if player.player_id == 'player_1':
                     self.opt_acts_ag.append(0)
-                if player.player_id == 'player_0':  
-                    self.opt_acts_op.append(0)     
-     
+                if player.player_id == 'player_0':
+                    self.opt_acts_op.append(0)
+
     def step(self, action):
-        # print("stepping the environment")
+        """
+        Perform one step in the environment by the agent. if the next observation is not terminated or truncated, 
+        pass observation to the opponent and step the environment. append opponent rewardz (purposefully misspelt to avoid clashing with class
+        attributes). 
+        including optimal action calculation.
+
+        Args:
+            action: The action taken by the learner.
+
+        Returns:
+            list: A list containing observations, cumulative rewards, terminations, truncations, and information to the agent.
+        """
         self.optimal_action(action, self.AGENT)
         super().step(action)
-        # stored_obs = self.observe()
-        # if self.agent_selection == 'player_0' and not self.observe()[2] and not self.observe()[3]:
         if self.agent_selection != self.learner and not self.observe()[2] and not self.observe()[3]:
             op_action_mask = self.observe()[0]['action_mask']
             op_obs = super().observe(self.baked)
             ops_action = self.OPPONENT.get_action(op_obs, self.game)
             self.optimal_action(action, self.OPPONENT)
             super().step(ops_action)
-            # op_reward = super().observe(self.baked)
             op_reward = self._cumulative_rewards[self.baked]
             self.OPPONENT.rewardz.append(op_reward)
-            # print("env stepped with opponent action")
-        # if self.observe()[2] or self.observe()[3]:
-            # print("game finished")
-        #     stored_obs = self.observe()
-            # stored_obs = self.reset()
-            
-        # obs = self.observe()[0]
-        # rest_dict = self.observe()[1]
-        # rest_dict_values = rest_dict.values()
-        # print(obs, rest_dict_values)
-        # print("action msk", self.observe()[0]['action_mask'])
+
         return self.observe()
 
     def reset(self, seed=None):
-        # print("env reset meta wrapper")
-        super().reset(seed = seed)
-        self.OPPONENT.rewardz =[]
-        obs, reward, done, truncation, info = self.observe()
-        info = {'reward': reward, 'done':done, 'truncation': truncation, 'info':info}
-        return (obs, info)
+        """
+        Reset the environment and return the initial observation and info.
 
-            
+        Args:
+            seed (int, optional): A random seed for environment reset.
+
+        Returns:
+            tuple: A tuple containing the initial observation and an info dictionary.
+        """
+        super().reset(seed=seed)
+        self.OPPONENT.rewardz = []
+        obs, reward, done, truncation, info = self.observe()
+        info = {'reward': reward, 'done': done, 'truncation': truncation, 'info': info}
+        return (obs, info)
+        
     def add_env_to_agents(self, env):
         for p in self.players:
             p.env = env
-    
-           
-    def plot_cumulative_reward(self, rewards):
-        cumulative_rewards = [sum(rewards[:i+1]) for i in range(len(rewards))]
-        episodes = range(1, len(rewards) + 1)
-        plt.plot(episodes, cumulative_rewards)
-        plt.xlabel('Episode Number')
-        plt.ylabel('Cumulative Reward')
-        plt.title('Cumulative Reward per Episode')
-        plt.grid(True)
-        plt.show()      
-                    
-            
-            
-                
-            
-        
-def  env(obs_type, render_mode):
+def env(obs_type, render_mode):
+    """
+    Create and configure an environment for reinforcement learning.
+
+    This function sets up an environment applying a series
+    of wrappers to the base environment. These wrappers modify the behavior of the
+    environment to enforce certain rules or constraints.
+
+    Parameters:
+    - obs_type (str): The type of observation for the environment. This can be one of the
+      supported observation types.
+    - render_mode (str): The rendering mode for the environment. This specifies how the
+      environment should be visually rendered, if at all.
+
+    Returns:
+    - env: A configured reinforcement learning environment with the specified observation
+      type and rendering mode, and additional wrappers for rule enforcement.
+    """
     env = raw_env(num_players=2, render_mode= render_mode, obs_type = obs_type)
-    # env = meta_env(num_players=2, render_mode= "human", learner = 'player_1')
     env = wrappers.TerminateIllegalWrapper(env, illegal_reward=-1)
     env = wrappers.AssertOutOfBoundsWrapper(env)
     env = wrappers.OrderEnforcingWrapper(env)

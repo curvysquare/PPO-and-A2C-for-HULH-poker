@@ -25,18 +25,22 @@ class LimitholdemEnv(Env):
         self.actions = ['call', 'raise', 'fold', 'check']
         self.obs_shape = None
         self.chips_type = None
-
-
-        
-        
         self.action_shape = [None for _ in range(self.num_players)]
 
         with open(os.path.join(rlcard.__path__[0], 'games/limitholdem/card2index.json'), 'r') as file:
             self.card2index = json.load(file)
 
     def set_state_shape(self, obs_shape, obs_type):
+        """
+        set the state shape, ie the boolean vector length depending on the observation type. 
+
+        Args:
+            obs_shape (_type_): boolean vector length
+            obs_type (_type_): observation type (124 or 72 or 72+ or PIG)
+        """
         self.obs_shape = obs_shape 
-        self.obs_type = obs_type       
+        self.obs_type = obs_type
+        # set the state shape, ie the boolean vector length depending on the observation type.       
         if self.obs_shape[0] == '124' and self.obs_type == '124':
             self.state_shape = [[124] for _ in range(self.num_players)]
         
@@ -60,16 +64,20 @@ class LimitholdemEnv(Env):
         '''
         return self.game.get_legal_actions()
 
-    def _extract_state(self, state,):
-        ''' Extract the state representation from state dictionary for agent
-
-        Note: Currently the use the hand cards and the public cards. TODO: encode the states
+    def _extract_state(self, state):
+        '''
+        Extracts the state representation from the state dictionary for the agent.
 
         Args:
-            state (dict): Original state from the game
+            state (dict): Original state from the game.
 
         Returns:
-            observation (list): combine the player's score and dealer's observable score for observation
+            extracted_state (dict): A dictionary containing the extracted state representation.
+                - 'legal_actions' (OrderedDict): Legal actions available to the agent.
+                - 'obs' (numpy.ndarray): The observation array based on the specified observation shape and type.
+                - 'raw_obs' (dict): The raw state observation from the game.
+                - 'raw_legal_actions' (list): List of raw legal actions.
+                - 'action_record' (ActionRecorder): The action recorder for the agent.
         '''
         extracted_state = {}
 
@@ -80,51 +88,52 @@ class LimitholdemEnv(Env):
         hand = state['hand']
         raise_nums = state['raise_nums']
         
+        # first deck of cards indexes the player cards, second indexes the community cards.
         if self.obs_shape[0] == '124' and self.obs_type == '124':
-            # cards = public_cards + hand
             hand_idx = [self.card2index[card] for card in hand]
             public_cards_idx = [self.card2index[card] for card in public_cards]
-            idx = hand_idx + public_cards_idx 
-            
-            # idx = [self.card2index[card] for card in cards]
             obs = np.zeros(124)
-            obs[idx] = 1
+            obs[hand_idx] = 1
+            obs[:52][public_cards_idx] = 2
+
             for i, num in enumerate(raise_nums):
                 obs[100 + i * 5 + num] = 1
             extracted_state['obs'] = obs
-
             extracted_state['raw_obs'] = state
             extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
             extracted_state['action_record'] = self.action_recorder
             
+
+        # default RLCard observation type
         if self.obs_shape[0] == '72' and self.obs_type == '72':
             cards = public_cards + hand
             idx = [self.card2index[card] for card in cards]
             obs = np.zeros(72)
             obs[idx] = 1
+
             for i, num in enumerate(raise_nums):
                 obs[50 + i * 5 + num] = 1
             extracted_state['obs'] = obs
-
             extracted_state['raw_obs'] = state
             extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
             extracted_state['action_record'] = self.action_recorder
             
+        # for 72+ observation type, public cards have index 1, player cards have index 2. opponent cards are unseen  
         if self.obs_shape[0] == '72' and self.obs_type == '72+':
             hand_idx = [self.card2index[card] for card in hand]
             public_cards_idx = [self.card2index[card] for card in public_cards]
             obs = np.zeros(72)
             obs[public_cards_idx] = 1
             obs[hand_idx] = 2
-            
+
             for i, num in enumerate(raise_nums):
                 obs[50 + i * 5 + num] = 1
             extracted_state['obs'] = obs
-
             extracted_state['raw_obs'] = state
             extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
             extracted_state['action_record'] = self.action_recorder    
         
+        # for Perfect information game (PIG), oppponents cards are included in the observation.
         if self.obs_shape[0] == '124' and self.obs_type == 'PIG':
             hand_idx = [self.card2index[card] for card in hand]
             public_cards_idx = [self.card2index[card] for card in public_cards]
@@ -132,7 +141,6 @@ class LimitholdemEnv(Env):
             op_state = self.game.get_state(player= 0)
             op_cards = op_state['hand']
             op_card_idx = [self.card2index[card] for card in op_cards ]
-            
             obs = np.zeros(124)
             obs[public_cards_idx] = 1
             obs[hand_idx] = 2
@@ -141,13 +149,10 @@ class LimitholdemEnv(Env):
             for i, num in enumerate(raise_nums):
                 obs[100 + i * 5 + num] = 1
             extracted_state['obs'] = obs
-
             extracted_state['raw_obs'] = state
             extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
             extracted_state['action_record'] = self.action_recorder       
             
-
-
         return extracted_state
 
     def get_payoffs(self):
