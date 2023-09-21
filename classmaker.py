@@ -72,7 +72,6 @@ class graph_metrics():
                 os.makedirs(self.direct)
         
     def create_x_y(self):
-        same_keys = self.check_dicts_have_same_keys(self.storage)
         self. dict_attributes = [attr for attr in dir(self.storage) if isinstance(getattr(self.storage, attr), dict)]
         self.storage_ids = list(getattr(self.storage, self.dict_attributes[1]).keys())
         
@@ -193,11 +192,14 @@ class graph_metrics():
             
             self.comb_train_rewards[1].extend(self.train_rewards[key][1])
             self.comb_eval_rewards[1].extend(self.eval_rewards[key][1])
-
-            if self.storage.gen_train_value_losses[key][0] != None:
-                self.comb_train_value_losses[1].extend(self.storage.gen_train_value_losses[key])
-                self.comb_train_policy_losses[1].extend(self.storage.gen_train_policy_losses[key])
-                self.comb_train_entropy_losses[1].extend(self.storage.gen_train_entropy_losses[key])
+            # try except below due to no loss extraction for a2c.
+            try:
+                if self.storage.gen_train_value_losses[key][0] != None:
+                    self.comb_train_value_losses[1].extend(self.storage.gen_train_value_losses[key])
+                    self.comb_train_policy_losses[1].extend(self.storage.gen_train_policy_losses[key])
+                    self.comb_train_entropy_losses[1].extend(self.storage.gen_train_entropy_losses[key])
+            except IndexError:
+                pass        
             
             if self.storageB is not None:
                 self.comb_train_rand_op_rewards[1].extend(self.train_rand_op_rewards[key][1])

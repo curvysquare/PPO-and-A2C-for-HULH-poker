@@ -26,9 +26,7 @@ import pandas as pd
 import random
 from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
-from classmaker import obs_type_envs
 from classmaker import metric_dicts
-
 from injector import card_injector
 from human_input import human_play
 
@@ -1300,16 +1298,17 @@ class PPO_vs_allops():
         self.rewards = {}
         self.eval_steps = eval_steps 
         self.eval_steps_human = 50 
-        self.PPO_path = r'S:\MSC_proj\models\PPO72+10defaultFalse_10'
-
+        # self.PPO_path = r'S:\MSC_proj\models\PPO72+10defaultFalse_10'
+        self.PPO_path = r'S:\MSC_proj\models\PPO7210defaultFalse_10'
     def PPO_vs_random(self):
-        PPO_vs_random = PPO_vs_OPPONENT(None, None, None, None, '72+', 'random')
+        PPO_vs_random = PPO_vs_OPPONENT( '72+', 'random')
         PPO_vs_random.init_eval_env()
         PPO_vs_random.load_params_from_file(self.PPO_path, None)
         PPO_vs_random.load_metric_dicts_storage()
         PPO_vs_random.evaluate(self.eval_steps)
         PPO_vs_random.get_results(True)
         self.rewards['PPO_vs_random'] = PPO_vs_random.mean_reward
+        print(PPO_vs_random.mean_reward)
 
     def PPO_vs_human(self): 
         PPO_vs_human = human_play('72+', self.eval_steps_human, self.PPO_path)
@@ -1317,7 +1316,7 @@ class PPO_vs_allops():
         self.rewards['PPO_vs_human'] =  PPO_vs_human.mean_reward
 
     def PPO_vs_a2c(self):
-        PPO_vs_a2c = PPO_vs_OPPONENT(None, None, None, None, '72+', 'A2C')
+        PPO_vs_a2c = PPO_vs_OPPONENT('72+', 'A2C')
         PPO_vs_a2c.init_eval_env()
         PPO_vs_a2c.load_params_from_file(self.PPO_path, r'S:\MSC_proj\models\A2C72+10defaultFalse_10')
         PPO_vs_a2c.load_metric_dicts_storage()
@@ -1326,7 +1325,7 @@ class PPO_vs_allops():
         self.rewards['PPO_vs_A2C'] = PPO_vs_a2c.mean_reward
 
     def PPO_vs_heuristic(self):
-        PPO_vs_heuristic = PPO_vs_OPPONENT(None, None, None, None, '72+', 'heuristic')
+        PPO_vs_heuristic = PPO_vs_OPPONENT('72+', 'heuristic')
         PPO_vs_heuristic.init_eval_env()
         PPO_vs_heuristic.load_params_from_file(self.PPO_path, None)
         PPO_vs_heuristic.load_metric_dicts_storage()
@@ -1352,13 +1351,13 @@ class PPO_vs_allops():
 
     def run(self):
         self.PPO_vs_random()
-        self.PPO_vs_a2c()
-        self.PPO_vs_human()
-        self.PPO_vs_heuristic()
-        self.bar_chart()
+        # self.PPO_vs_a2c()
+        # self.PPO_vs_human()
+        # self.PPO_vs_heuristic()
+        # self.bar_chart()
 
-# allops = PPO_vs_allops(10000)      
-# allops.run()                                                                                                                                                                                    
+allops = PPO_vs_allops(10000)      
+allops.run()                                                                                                                                                                                    
 
 def PIG_vs_random():
     PPO_path = r'S:\MSC_proj\models\PPOPIG10defaultTruePIG72_10'

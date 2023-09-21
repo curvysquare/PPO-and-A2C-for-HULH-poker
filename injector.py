@@ -30,7 +30,6 @@ from tabulate import tabulate
 import pandas as pd
 from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
-from classmaker import obs_type_envs
 from classmaker import metric_dicts
 
 import json

@@ -23,7 +23,6 @@ from tabulate import tabulate
 import pandas as pd
 from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
-from classmaker import obs_type_envs
 from classmaker import metric_dicts
 from ppo import PPO
 class human_play_callback(BaseCallback):
@@ -68,7 +67,7 @@ class human_play():
         Eval_env.AGENT.model = PPO('MultiInputPolicy', Eval_env, optimizer_class = th.optim.Adam, activation_fn= nn.Tanh, net_arch = {'pi': [256], 'vf': [256]},learning_rate= 0.005778633008004902, n_steps = 3072,  batch_size = 32, n_epochs= 70, ent_coef=  0.0025, vf_coef=  0.25, clip_range=0.1, max_grad_norm=0.6, gae_lambda = 0.85, normalize_advantage=False)
         Eval_env.AGENT.model.set_parameters(load_path_or_dict= self.root)
         Eval_env.OPPONENT.policy = 'human'
-        
+        0
         self.Eval_env = Monitor(Eval_env)
         self.env = Eval_env
         

@@ -26,7 +26,7 @@ import pandas as pd
 import random
 from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
-from classmaker import obs_type_envs
+# from classmaker import obs_type_envs
 from classmaker import metric_dicts
 
 from injector import card_injector

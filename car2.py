@@ -1167,12 +1167,12 @@ class train_convergence_search():
         self.trial_results = {}
         
 
-    def init_trained_op(self):
+    def init_trained_op(self, training_steps):
         self.na_gen_0_dict = {}
         # na = self.net_arch
         self.na = [{'pi': [64], 'vf': [64]}]
         for na_key in self.na:
-            sp = self_play(0, 20480, 1, obs_type = self.obs_type, tag = 19, model = self.model, na_key = na_key)
+            sp = self_play(0, training_steps, 1, obs_type = self.obs_type, tag = 19, model = self.model, na_key = na_key)
             sp.run(False)
             self.na_gen_0_dict[str(na_key)] = sp.gen_lib[0]
 # Define the Optuna callback
