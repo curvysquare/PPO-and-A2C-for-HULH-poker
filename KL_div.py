@@ -31,6 +31,26 @@ from injector import card_injector
 from human_input import human_play
 
 class kl_div_test():
+    """
+    A class for testing the Kullback-Leibler (KL) divergence between policies in a Texas Hold'em environment.
+
+    This class initializes multiple pre-trained PPO models and evaluates their KL divergence when used as
+    agents in a Texas Hold'em environment.
+
+    Parameters:
+    - obs_type (str): The observation type for the Texas Hold'em environment ('rgb_array' or 'tensor').
+    - n_gens (int): The number of generations to evaluate.
+
+    Attributes:
+    - obs_type (str): The observation type for the environment.
+    - results (dict): A dictionary to store the KL divergence results.
+    - n_gens (int): The number of generations to evaluate.
+    - metric_dicts: An instance of the metric_dicts class to store metric data.
+    - gen_keys (list): A list of generation keys for tracking the evaluations.
+
+    Methods:
+    - run(): Runs the evaluation process for KL divergence between policies.
+    """
     def __init__(self, obs_type, n_gens):
         self.obs_type = obs_type
         self.results = {}

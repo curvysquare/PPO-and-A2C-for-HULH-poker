@@ -31,6 +31,30 @@ from injector import card_injector
 from human_input import human_play
 
 class NE_tool():
+    """
+    A class for analyzing and visualizing Nash Equilibrium (NE) properties in a Texas Hold'em environment.
+
+    This class initializes multiple pre-trained PPO models and evaluates their NE-related properties, including
+    equilibrium rewards, best response rewards, and regrets. It also provides functionality to visualize the results.
+
+    Parameters:
+    - obs_type (str): The observation type for the Texas Hold'em environment ('rgb_array' or 'tensor').
+    - n_gens (int): The number of generations to analyze.
+
+    Attributes:
+    - obs_type (str): The observation type for the environment.
+    - eq_rew (dict): A dictionary to store equilibrium rewards for each model.
+    - br_rew (dict): A dictionary to store best response rewards for each model.
+    - regrets (dict): A dictionary to store regrets for each model.
+    - n_gens (int): The number of generations to analyze.
+    - metric_dicts: An instance of the metric_dicts class to store metric data.
+    - gen_keys (list): A list of generation keys for tracking the analysis.
+
+    Methods:
+    - run(n_eval_episodes): Runs the analysis for equilibrium, best response, and regrets.
+    - evaluate(modelA, modelB): Evaluates the mean reward of a pair of models in the Texas Hold'em environment.
+    - print_graph(): Generates and displays a line plot of regrets across the self-play process.
+    """
     def __init__(self, obs_type, n_gens):
         self.obs_type = obs_type
         self.eq_rew = {}
@@ -99,5 +123,5 @@ class NE_tool():
         plt.grid(True)
 
         # Show the plot
-        plt.tight_layout()  # Optional: improves plot layout
+        plt.tight_layout()  
         plt.show()

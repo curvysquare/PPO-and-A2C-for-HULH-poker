@@ -39,16 +39,60 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from scipy.special import kl_div
 
-# env = texas_holdem.env('PIG', render_mode = "rgb_array")
-# env.AGENT.policy = 'PPO'
-# env.OPPONENT.policy = 'PPO'
-# env.OPPONENT.model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [256], 'vf': [256]},learning_rate=  0.07100101556878591, n_steps = 100, batch_size = 50, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
-# env.AGENT.model = PPO('MultiInputPolicy', env, optimizer_class = th.optim.Adam,activation_fn= nn.ReLU,net_arch=  {'pi': [256], 'vf': [256]},learning_rate=  0.07100101556878591, n_steps = 100, batch_size = 50, n_epochs=  31, ent_coef=  0.000125, vf_coef=  0.25)
-# env.AGENT.model.learn(10, False, None, progress_bar=True)
-# env.OPPONENT.model.learn(10, False, None, progress_bar=True)
+
 
 
 class card_injector():
+    """
+    A class for analyzing and comparing probability distributions of card combination observations.
+
+    This class takes an agent and an opponent, injects specific card combinations, and calculates the KL divergence
+    or cosine similarity between the resulting probability distributions of actions taken by the agent and opponent.
+
+    Parameters:
+    - agent: The agent model to evaluate.
+    - opponent: The opponent model to evaluate.
+    - env: The Texas Hold'em environment.
+
+    Attributes:
+    - agent: The agent model to evaluate.
+    - opponent: The opponent model to evaluate.
+    - env: The Texas Hold'em environment.
+    - hand_HC: A list of high card hand combinations.
+    - com_cards_HC: A list of common cards for high card combinations.
+    - hand_STR: A list of straight hand combinations.
+    - com_cards_STR: A list of common cards for straight combinations.
+    - hand_RF: A list of royal flush hand combinations.
+    - com_cards_RF: A list of common cards for royal flush combinations.
+    - hand_PR: A list of pair hand combinations.
+    - com_cards_PR: A list of common cards for pair combinations.
+    - hand_FLSH: A list of flush hand combinations.
+    - com_cards_FLSH: A list of common cards for flush combinations.
+    - hand_STR_FLSH: A list of straight flush hand combinations.
+    - com_cards_STR_FLSH: A list of common cards for straight flush combinations.
+    - high_card: A predefined high card combination.
+    - pair: A predefined pair combination.
+    - straight: A predefined straight combination.
+    - flush: A predefined flush combination.
+    - straight_flush: A predefined straight flush combination.
+    - royal_flush: A predefined royal flush combination.
+    - title_list: A list of predefined combination titles.
+    - card2index: A dictionary mapping card names to their indices.
+    - pre_made_dict: A dictionary containing pre-made combinations.
+    - obs_dict: A dictionary containing observations for each combination.
+    - div_results: A dictionary to store KL divergence results for each combination.
+    - sim_results: A dictionary to store cosine similarity results for each combination.
+
+    Methods:
+    - premaker(title): Creates predefined card combinations based on the specified title.
+    - create_obs(): Creates observations for each combination and stores them in obs_dict.
+    - get_kl_div(): Calculates KL divergence between agent and opponent probabilities for each combination.
+    - get_probs_similarity(): Calculates cosine similarity between agent and opponent probabilities for each combination.
+    - calculate_cosine_similarity(list1, list2): Calculates cosine similarity between two lists.
+    - calculate_kl_divergence(list1, list2, smoothing_alpha): Calculates KL divergence between two lists.
+    - return_results(): Returns the KL divergence results.
+
+    """
     def __init__(self, agent, opponent, env):
         self.agent = agent
         self.opponent = opponent
@@ -96,7 +140,6 @@ class card_injector():
         
         self.get_kl_div()
 
-        # print(self.return_results())    
     def premaker(self, title):    
         if title == 'pair':        
             card_list = self.pair['com_cards']
@@ -158,7 +201,6 @@ class card_injector():
         for c in card_list:
             self.com_cards.append(Card(*c)) 
             
-
     def create_obs(self):
         for key in self.pre_made_dict:
             tupe = self.pre_made_dict[key]
@@ -318,5 +360,3 @@ class card_injector():
         return (self.div_results)
 
     
-# ci = card_injector(env.AGENT, env.OPPONENT, env)
-# print(ci.return_results())

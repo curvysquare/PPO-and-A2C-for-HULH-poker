@@ -4,6 +4,7 @@ plotly
 stable_baselines3 extra
 optuna
 pettingzoo
+treys (poker hand evlauator ) https://github.com/ihendley/treys
 
 NOTES: 
 -dont install rlcard as this is already included with required modifications 
