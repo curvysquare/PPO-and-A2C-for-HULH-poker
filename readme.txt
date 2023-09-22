@@ -19,4 +19,9 @@ change JSON setting to "justMyCode": false. this will alllow easy access to the 
 the exact same code as in the implementation and results section but with the variables changed to smaller values 
 to demonstrate the code runs successfully.
 
+- when running for the first time. the 'path_gym' function of _patch_env will raise an exception saying the environment is not recognised as an open AI gymnasium environment.
+this is caused by the custom wrapper modifications making it not being recognised, despite being fully compatible. You can either delete this file on your device and replace it with 
+the modified patch_gym.py file included in this folder. Alternativley you can easily modify the _patch_env function by hashing out all the code and just place 'return env'.
+
+
 Regards - Rhys 
