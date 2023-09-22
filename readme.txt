@@ -17,3 +17,5 @@ change JSON setting to "justMyCode": false. this will alllow easy access to the 
 . ie, how to code was used to generate the results and findings used in the project. Finally, the third part include demonstrations:
 the exact same code as in the implementation and results section but with the variables changed to smaller values 
 to demonstrate the code runs successfully.
+
+Regards - Rhys 
