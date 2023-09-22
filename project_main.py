@@ -48,7 +48,7 @@ import os
 try:
     trained_models_path = os.path.abspath('trained_models')
     PPO72plus10defaultFalse_10 = os.path.join(trained_models_path + '\\PPO72+10defaultFalse_10')
-    PO72plus10defaultTrue_10 = os.path.join(trained_models_path + '\\PPO72+10defaultTrue_10')
+    PPO72plus10defaultTrue_10 = os.path.join(trained_models_path + '\\PPO72+10defaultTrue_10')
     A2C72plus10defaultFalse_10 = os.path.join(trained_models_path + '\\A2C72+10defaultFalse_10')
     PPOPIG10defaultTruePIG72_10 = os.path.join(trained_models_path + '\\PPOPIG10defaultTruePIG72_10')
 
@@ -80,6 +80,7 @@ from classmaker import graph_metrics
 #     Section 7.8: hyperparameter tunning
 from primary_hyp_tune import BatchMultiplier
 from primary_hyp_tune import hyperparam_search
+from secondary_hyp_tune import micro_hyperparam_search
 
 #     Section 7.9: PPO algorithm and modifications
 from ppo import PPO
@@ -195,11 +196,11 @@ self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_typ
 self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_type='72+', tag=3, model='PPO',na_key = None, default_params=False, info= 'project_main')
 # 
 # # Hyperparameter tuned A2C with 72+ observation space type selfplay trained for 10 generation
-# self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_type='72+', tag=4, model='A2C',na_key = None, default_params=False, info= 'project_main')
+self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_type='72+', tag=4, model='A2C',na_key = None, default_params=False, info= 'project_main')
 # # Hyperparameter tuned A2C with default observation space type selfplay trained for 10 generation
-# self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_type='72', tag=5, model='A2C',na_key = None, default_params=False, info= 'project_main')
+self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_type='72', tag=5, model='A2C',na_key = None, default_params=False, info= 'project_main')
 # # Default Hyperparameter A2C with 72+ observation space type selfplay trained for 10 generation
-# self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_type='72+', tag=6, model='A2C',na_key = None, default_params=False, info= 'project_main')      
+self_play_group(n_gens=10, learning_steps=30720, n_eval_episodes =10000, obs_type='72+', tag=6, model='A2C',na_key = None, default_params=False, info= 'project_main')      
 
 
 # #     Section 8.3: Observation space amendments results
@@ -398,13 +399,13 @@ default_obs_PPO_vs_random(PPO72plus10defaultFalse_10, 10000)
 
 
 # #  Section 8.5: Nash Equilibrium analysis
-# from NE_analysis import NE_tool
+from NE_analysis import NE_tool
 NET = NE_tool('72+', 10)
 NET.run(n_eval_episodes=100)
 NET.print_graph()
 
 # # Section 8.6: KL divergence
-from KL_div.py import kl_div_test
+from KL_div import kl_div_test
 kl = kl_div_test('72+',10)
 print(kl.run())
 

@@ -3,6 +3,7 @@ Required packages:
 plotly
 stable_baselines3 extra
 optuna
+pettingzoo
 
 NOTES: 
 -dont install rlcard as this is already included 
