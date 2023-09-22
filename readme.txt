@@ -6,7 +6,7 @@ optuna
 pettingzoo
 
 NOTES: 
--dont install rlcard as this is already included 
+-dont install rlcard as this is already included with required modifications 
 -made using VScode, suggested to run in this IDE to assist with compatibility
 - filepaths to save figures and trained models will likely have to be replaced with a filepath to a folder on your own system. 
 
@@ -18,3 +18,5 @@ change JSON setting to "justMyCode": false. this will alllow easy access to the 
 . ie, how to code was used to generate the results and findings used in the project. Finally, the third part include demonstrations:
 the exact same code as in the implementation and results section but with the variables changed to smaller values 
 to demonstrate the code runs successfully.
+
+Regards - Rhys 
