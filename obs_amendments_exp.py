@@ -204,4 +204,4 @@ def obs_experiment_group():
     # Get and optionally plot experiment results
     experiment.get_results(graphs=True)
 
-obs_experiment_group() 
+# obs_experiment_group() 

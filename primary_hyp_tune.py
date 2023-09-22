@@ -4,13 +4,9 @@ from rlcard.utils.utils import print_card as prnt_cd
 from rlcard.utils.utils import print_card as prnt_cd
 from env_checker_mod import check_env
 from evaluation_mod import evaluate_policy
-from callbacks_mod import EvalCallback
-from callbacks_mod import StopTrainingOnNoModelImprovement
+
 from stable_baselines3.common.monitor import Monitor
-try:
-    from stable_baselines3.common.callbacks_mod import BaseCallback
-except ModuleNotFoundError:
-    from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnNoModelImprovement
 import os 
 import matplotlib.pyplot as plt
 from ppo import PPO
@@ -26,7 +22,6 @@ import pandas as pd
 import random
 from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
-from classmaker import obs_type_envs
 from classmaker import metric_dicts
 
 from injector import card_injector
@@ -153,18 +148,19 @@ class hyperparam_search(BatchMultiplier):
     - run(self, print_graphs): Run the hyperparameter optimization, store results and print graphs
     """
 
-    def __init__(self, callback, verbose, batch_size, model_type, obs_type):
+    def __init__(self, callback, verbose, batch_size, model_type, obs_type, trial_train_steps):
         self.callback = callback
         self.verbose = verbose
         self.batch_size = batch_size,
         self.env =None
         self.model_type = model_type
         self.obs_type = obs_type
+        self.trial_train_steps = trial_train_steps
         self.net_arch = [{'pi':[64,64], 'vf': [64,64]}, {'pi':[256], 'vf': [256]}, {'pi':[256,128], 'vf': [256,128]}]
         super().__init__(self.batch_size)
 
     
-    def init_trained_op(self):
+    def init_trained_op(self, training_steps):
         """
         Initialize trained opponent models for evaluation. the trained opponent has to have the same
         network architecture as the agent. This function creates a dictionary according to this    
@@ -183,7 +179,7 @@ class hyperparam_search(BatchMultiplier):
         self.na_gen_0_dict = {}
         na = self.net_arch
         for na_key in na:
-            sp = self_play(0, 2048, 1, obs_type = self.obs_type, tag = 44, model = self.model_type, na_key = na_key, default_params=True, info = 'primhyptune')
+            sp = self_play(0, training_steps, 1, obs_type = self.obs_type, tag = 44, model = self.model_type, na_key = na_key, default_params=True, info = 'primhyptune')
             sp.run(False)
             self.na_gen_0_dict[str(na_key)] = sp.gen_lib[0]
             
@@ -289,7 +285,7 @@ class hyperparam_search(BatchMultiplier):
             model_params = self.optimize_A2C(trial) 
         #Initialize the training environment  
         env = texas_holdem.env(self.obs_type, render_mode="rgb_array")
-        #Initialize the training environment
+        #Initialize the evaluation environment
         Eval_env = texas_holdem.env(self.obs_type, render_mode="rgb_array")
         
          #Initialize the training environment  
@@ -323,19 +319,19 @@ class hyperparam_search(BatchMultiplier):
      # Initialize the evaluation environment with monitoring           
         Eval_env = Monitor(Eval_env)
         self.env = env
-        cb = StopTrainingOnNoModelImprovement(1000, 75)
-        # Set up evaluation callback    
-        cb = EvalCallback(Eval_env, eval_freq=10000, callback_after_eval= cb, verbose=0, n_eval_episodes = 1000)
+    
+        stop_train_callback = StopTrainingOnNoModelImprovement(max_no_improvement_evals=100, min_evals=75)
+        eval_callback = EvalCallback(Eval_env, eval_freq=10000, callback_after_eval=stop_train_callback, verbose=0)
         try: 
             # Train the agent and evaluate its performance
-            env.AGENT.model.learn(total_timesteps=40000, callback= cb, progress_bar=False, dumb_mode=False)
+            env.AGENT.model.learn(total_timesteps=self.trial_train_steps, callback= eval_callback, progress_bar=False, dumb_mode=False)
             mean_reward, _ = evaluate_policy(self.env.AGENT.model, Eval_env, n_eval_episodes=1000)
         except ValueError:
              # Handle the case where training fails with a ValueError
             mean_reward = 0.0
         return mean_reward
     
-    def run(self, print_graphs):
+    def run(self, print_graphs, numb_trials):
         """
         Run the hyperparameter optimization process for the specified reinforcement learning model.
 
@@ -362,7 +358,7 @@ class hyperparam_search(BatchMultiplier):
 
         try:
             # Run the hyperparameter optimization
-            study.optimize(self.optimize_agent, callbacks=None, n_trials=2, n_jobs=1, show_progress_bar=True)
+            study.optimize(self.optimize_agent, callbacks=None, n_trials=numb_trials, n_jobs=1, show_progress_bar=True)
         except KeyboardInterrupt:
             print('Interrupted by keyboard.')
             # Display optimization graphs before exiting in case of interruption
@@ -392,11 +388,11 @@ def primary_hyp_search_PPO():
     Returns:
     - None
     """
-    hypsrch = hyperparam_search(callback=None, verbose=True, batch_size=[32, 64, 128, 256, 512, 1024], model_type='PPO', obs_type='72+')
-    hypsrch.init_trained_op()
-    print(hypsrch.run(print_graphs=True))
+    hypsrch = hyperparam_search(callback=None, verbose=True, batch_size=[32, 64, 128, 256, 512, 1024], model_type='PPO', obs_type='72+', trial_train_steps =40000)
+    hypsrch.init_trained_op(training_steps=20480)
+    print(hypsrch.run(print_graphs=True, numb_trials=120))
 
-primary_hyp_search_PPO()
+# primary_hyp_search_PPO()
 
 def primary_hyp_search_A2C():
     """
@@ -411,8 +407,8 @@ def primary_hyp_search_A2C():
     Returns:
     - None
     """
-    hypsrch = hyperparam_search(callback=None, verbose=True, batch_size=[32, 64, 128, 256, 512, 1024], model_type='A2C', obs_type='72+')
-    hypsrch.init_trained_op()
-    print(hypsrch.run(print_graphs=True))
+    hypsrch = hyperparam_search(callback=None, verbose=True, batch_size=[32, 64, 128, 256, 512, 1024], model_type='A2C', obs_type='72+', trial_train_steps =40000)
+    hypsrch.init_trained_op(training_steps=20480)
+    print(hypsrch.run(print_graphs=True, numb_trials=120))
 
-primary_hyp_search_A2C()
+# primary_hyp_search_A2C()

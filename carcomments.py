@@ -1298,8 +1298,8 @@ class PPO_vs_allops():
         self.rewards = {}
         self.eval_steps = eval_steps 
         self.eval_steps_human = 50 
-        # self.PPO_path = r'S:\MSC_proj\models\PPO72+10defaultFalse_10'
-        self.PPO_path = r'S:\MSC_proj\models\PPO7210defaultFalse_10'
+        self.PPO_path = r'S:\MSC_proj\models\PPO72+10defaultFalse_10'
+
     def PPO_vs_random(self):
         PPO_vs_random = PPO_vs_OPPONENT( '72+', 'random')
         PPO_vs_random.init_eval_env()
@@ -1595,24 +1595,6 @@ class NE_tool():
         mean_reward ,episode_rewards, episode_lengths, episode_rewards_op= evaluate_policy(self.eval_env.AGENT.model, self.eval_env, callback=None, return_episode_rewards =True, n_eval_episodes = self.n_eval_episodes)
 
         return mean_reward
-
-    def print_table(self):
-            # data = [
-            # ['High Card'] + self.HC_sims[1],
-            # ['Pair'] + self.PR_sims[1],
-            # ['Straight'] + self.STR_sims[1],
-            # ['Flush'] + self.FLSH_sims[1],
-            # ['Straight Flush'] + self.STR_FLSH_sims[1],
-            # ['Royal Flush'] + self.RF_sims[1]
-            
-            # ] 
-            # headers = ['Category'] + self.HC_sims[0]
-            # table = tabulate(data, headers=headers, tablefmt='grid')
-            # print(table)
-            # for       
-        print(self.eq_rew)
-        print(self.br_rew)
-        print(self.regrets)
 
 
     def print_graph(self):

@@ -10,7 +10,7 @@ from gymnasium import spaces
 from base_class_mod import BaseAlgorithm
 from buffers_mod import DictRolloutBuffer, RolloutBuffer
 try:
-    from stable_baselines3.common.callbacks_mod import BaseCallback
+    from callbacks_mod import BaseCallback
 except ImportError:
     from stable_baselines3.common.callbacks import BaseCallback
 

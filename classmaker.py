@@ -351,11 +351,20 @@ class graph_metrics():
             fig1, axs1 = plt.subplots(self.num_graphs, 2, sharey= 'col', figsize = self.figsize)
             for i, key in enumerate(self.storage_ids):
                 if train:
-                    axs1[i, 0].plot(self.train_moving_mean[key][0], self.train_moving_mean[key][1],  color = 'b', label= 'moving mean')
-                    axs1[i, 0].axhline(y=np.mean(self.train_moving_mean[key][1]), color='r', linestyle='-', label='average')
-                    axs1[i, 0].axhline(y=-0.5, color='g', linestyle='--', label='random')
-                    axs1[i, 0].set_title(str(key) + ' moving mean')
-                    axs1[i, 0].legend(fontsize='small')
+                    try:
+                        axs1[i, 0].plot(self.train_moving_mean[key][0], self.train_moving_mean[key][1],  color = 'b', label= 'moving mean')
+                        axs1[i, 0].axhline(y=np.mean(self.train_moving_mean[key][1]), color='r', linestyle='-', label='average')
+                        axs1[i, 0].axhline(y=-0.5, color='g', linestyle='--', label='random')
+                        axs1[i, 0].set_title(str(key) + ' moving mean')
+                        axs1[i, 0].legend(fontsize='small')
+                    except IndexError:
+                        fig1, axs1 = plt.subplots(self.num_graphs, 1, sharey= 'col', figsize = self.figsize)
+                        axs1.plot(self.train_moving_mean[key][0], self.train_moving_mean[key][1],  color = 'b', label= 'moving mean')
+                        axs1.axhline(y=np.mean(self.train_moving_mean[key][1]), color='r', linestyle='-', label='average')
+                        axs1.axhline(y=-0.5, color='g', linestyle='--', label='random')
+                        axs1.set_title(str(key) + ' moving mean')
+                        axs1.legend(fontsize='small')
+
                 if eval:
                     axs1[i, 1].plot(self.eval_moving_mean[key][0], self.eval_moving_mean[key][1], color = 'b', label= 'moving mean')
                     axs1[i, 1].axhline(y=np.mean(self.eval_moving_mean[key][1]), color='r', linestyle='-', label='average')
@@ -569,7 +578,7 @@ class graph_metrics():
             self.comb_plot_opt_acts(sing_opt_acts)
             self.comb_plot_loss()
 
-    def print_select_graphs(self, rewards, movrews,movmean, loss, combs, sim, opts):
+    def print_select_graphs(self, rewards, movrews,movmean, loss, combs, sim, opts, train, eval, trim):
             self.create_x_y()
             if rewards:
                 self.plot_rewards(train, eval)

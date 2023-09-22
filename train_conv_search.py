@@ -1,9 +1,12 @@
+from self_play import self_play
+import matplotlib.pyplot as plt
+
 class train_convergence_search():
     """
     Class to perform a search for convergence-related hyperparameters in a PPO training setup.
 
     This class initializes a search for convergence-related hyperparameters using Optuna, specifically
-    for training a PPO agent in a Texas Hold'em environment. It defines a custom Optuna callback
+    for training a PPO agent. It defines a custom Optuna callback
     to stop training based on convergence criteria. It also tracks trial results and provides
     optimization parameters for the Optuna study.
 
@@ -39,7 +42,7 @@ class train_convergence_search():
         self.na_gen_0_dict = {}
         self.na = [{'pi': [64], 'vf': [64]}]
         for na_key in self.na:
-            sp = self_play(0, n_training_steps, 1, obs_type = self.obs_type, tag = 19, model = self.model, na_key = na_key)
+            sp = self_play(0, n_training_steps, 1, obs_type = self.obs_type, tag = 19, model = self.model, na_key = na_key, default_params=True, info ='TCS')
             sp.run(False)
             self.na_gen_0_dict[str(na_key)] = sp.gen_lib[0]
 

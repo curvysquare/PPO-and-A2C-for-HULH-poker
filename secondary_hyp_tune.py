@@ -4,8 +4,7 @@ from rlcard.utils.utils import print_card as prnt_cd
 from rlcard.utils.utils import print_card as prnt_cd
 from env_checker_mod import check_env
 from evaluation_mod import evaluate_policy
-from callbacks_mod import EvalCallback
-from callbacks_mod import StopTrainingOnNoModelImprovement
+from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnNoModelImprovement
 from stable_baselines3.common.monitor import Monitor
 try:
     from stable_baselines3.common.callbacks_mod import BaseCallback
@@ -26,7 +25,6 @@ import pandas as pd
 import random
 from rlcard.agents.human_agents.nolimit_holdem_human_agent import HumanAgent
 from classmaker import graph_metrics
-from classmaker import obs_type_envs
 from classmaker import metric_dicts
 
 from injector import card_injector
@@ -76,7 +74,7 @@ class micro_hyperparam_search:
         self.obs_type = obs_type
 
         
-    def init_trained_op(self):
+    def init_trained_op(self, training_steps):
         """
         Initialize trained opponent models for evaluation. the trained opponent has to have the same
         network architecture as the agent. This function creates a dictionary according to this    
@@ -92,10 +90,10 @@ class micro_hyperparam_search:
         Returns:
         - None
         """
-        self.n
+       
         self.na_gen_0_dict = {}
         na_key = {'pi': [256], 'vf': [256]}
-        sp = self_play(0, 30720, 1, obs_type = self.obs_type, tag = 202, model = self.model_type, na_key = na_key)
+        sp = self_play(0, training_steps, 1, obs_type = self.obs_type, tag = 202, model = self.model_type, na_key = na_key, default_params=False, info='secondhyptune'+str(self.model_type))
         sp.run(False)
         self.na_gen_0_dict[str(na_key)] = sp.gen_lib[0]
             
@@ -247,35 +245,25 @@ class micro_hyperparam_search:
         except ValueError:
             mean_reward = 0.0
         return mean_reward
-        
-        def run(self, print_graphs):
-            self.optimize_agent = self.custom_exception_handler(self.optimize_agent)
-            if __name__ == '__main__':
-                study = optuna.create_study(direction= 'maximize')
-            try:
-                study.optimize(self.optimize_agent, callbacks=None, n_trials=20, n_jobs=1, show_progress_bar=True)
-            except KeyboardInterrupt:
-                print('Interrupted by keyboard.')
-                optuna.visualization.plot_param_importances(study).show()
-                optuna.visualization.plot_optimization_history(study).show()
-    
-            self.best_trial = study.best_trial
-            self.best_params = study.best_params
-            
-            if print_graphs == True:
-                optuna.visualization.plot_param_importances(study).show()
-                optuna.visualization.plot_optimization_history(study).show()
-            
-            return self.best_trial, self.best_params
-        
-    def secondary_hyp_search_PPO(self):
-            hypersearch = micro_hyperparam_search(callback = None, verbose = True, model_type = 'PPO')
-            hypersearch.init_trained_op()
-            hypersearch.run()
-    secondary_hyp_search_PPO()        
+        # n trials = 20
 
-    def secondary_hyp_search_A2C(self):
-            hypersearch = micro_hyperparam_search(callback = None, verbose = True, model_type = 'A2C')
-            hypersearch.init_trained_op()
-            hypersearch.run()
-    secondary_hyp_search_A2C()        
+    def run(self, print_graphs, numb_trials):
+        self.optimize_agent = self.custom_exception_handler(self.optimize_agent)
+        if __name__ == '__main__':
+            study = optuna.create_study(direction= 'maximize')
+        try:
+            study.optimize(self.optimize_agent, callbacks=None, n_trials=20, n_jobs=1, show_progress_bar=True)
+        except KeyboardInterrupt:
+            print('Interrupted by keyboard.')
+            optuna.visualization.plot_param_importances(study).show()
+            optuna.visualization.plot_optimization_history(study).show()
+
+        self.best_trial = study.best_trial
+        self.best_params = study.best_params
+        
+        if print_graphs == True:
+            optuna.visualization.plot_param_importances(study).show()
+            optuna.visualization.plot_optimization_history(study).show()
+        
+        return self.best_trial, self.best_params
+        
