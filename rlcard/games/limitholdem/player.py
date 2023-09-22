@@ -5,6 +5,7 @@ from rlcard.agents import DQNAgent
 from rlcard.utils.utils import print_card
 from treys import Evaluator
 from treys import Card
+import random
 
 class PlayerStatus(Enum):
     ALIVE = 0
@@ -166,9 +167,21 @@ class LimitHoldemPlayer:
             
         if self.policy == 'heuristic':
            action = self.optimal_action(player_obs, game)
+           if not self.check_for_one_at_index(player_obs['action_mask'], action):
+            action = self.env.action_space(self.player_id).sample(player_obs['action_mask'])
 
         return action 
-                          
+
+    def check_for_one_at_index(self, my_array, selected_index):
+    # Check if the selected ction is valid
+        if 0 <= selected_index < len(my_array):
+            # Check if there is a 1 at the selected index
+            if my_array[selected_index] == 1:
+                return True
+            else:
+                return False
+        else:
+            return False                     
     def optimal_action(self, player_obs, game):
         """
 
@@ -233,8 +246,9 @@ class LimitHoldemPlayer:
                 op_act = 2  
         else:            
             mask1 = player_obs['action_mask']
-            action = self.env.action_space(self.player_id).sample(mask1)
-            op_act = action 
+            legal_acts =  [i for i, value in enumerate(mask1) if value == 1]
+            op_act = random.choice(legal_acts)
+      
             
         return op_act
   

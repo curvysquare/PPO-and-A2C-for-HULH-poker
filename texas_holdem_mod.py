@@ -683,6 +683,7 @@ def env(obs_type, render_mode):
     - env: A configured reinforcement learning environment with the specified observation
       type and rendering mode, and additional wrappers for rule enforcement.
     """
+ 
     env = raw_env(num_players=2, render_mode= render_mode, obs_type = obs_type)
     env = wrappers.TerminateIllegalWrapper(env, illegal_reward=-1)
     env = wrappers.AssertOutOfBoundsWrapper(env)
